@@ -1,6 +1,8 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/samotarnik/bitstamp-go)](https://goreportcard.com/report/github.com/samotarnik/bitstamp-go)
+
 # bitstamp-go
 
-Client implementations for Bitstamp's REST and Websocket APIs in Go.
+Client implementations for Bitstamp's REST and Websocket APIs in Go. Copied heavily from [github.com/ajph/bitstamp-go](https://github.com/ajph/bitstamp-go). Websocket client uses [API v2](https://www.bitstamp.net/websocket/v2/) instead of Pusher.
 
 ## Requirements
 
