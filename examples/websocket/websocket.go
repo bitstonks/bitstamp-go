@@ -1,10 +1,11 @@
 package main
 
 import (
-	"bitstamp"
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/samotarnik/bitstamp-go"
 )
 
 func main() {
@@ -34,9 +35,8 @@ func main() {
 	c.Unsubscribe("live_orders_btcusd", "live_trades_btcusd")
 
 	fmt.Println("=== sleeping")
-
 	time.Sleep(1 * time.Second) // to clean up whatever...
-	fmt.Println("=== closing")
 
+	fmt.Println("=== closing")
 	c.Close()
 }

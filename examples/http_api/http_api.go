@@ -1,9 +1,10 @@
 package main
 
 import (
-	"bitstamp"
 	"fmt"
 	"log"
+
+	"github.com/samotarnik/bitstamp-go"
 )
 
 func main() {

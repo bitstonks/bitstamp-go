@@ -1,4 +1,4 @@
-module bitstamp
+module github.com/samotarnik/bitstamp-go
 
 go 1.12
 
