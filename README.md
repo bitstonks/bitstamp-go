@@ -1,4 +1,5 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/samotarnik/bitstamp-go)](https://goreportcard.com/report/github.com/samotarnik/bitstamp-go)
+[![CircleCI](https://circleci.com/gh/samotarnik/bitstamp-go/tree/dump.svg?style=svg)](https://circleci.com/gh/samotarnik/bitstamp-go/tree/dump)
 
 # bitstamp-go
 
