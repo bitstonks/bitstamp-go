@@ -36,7 +36,7 @@ func main() {
 	}
 	fmt.Printf("%+v\n", ticker)
 
-	ob, err := api.V1OrderBook()
+	ob, err := api.V2OrderBook("eurusd", 2)
 	if err != nil {
 		log.Panic(err)
 	}

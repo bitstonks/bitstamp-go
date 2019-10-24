@@ -10,13 +10,22 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/shopspring/decimal"
 )
 
-func urlMerge(baseUrl url.URL, urlPath string) string {
+func urlMerge(baseUrl url.URL, urlPath string, queryParams ...[2]string) string {
 	baseUrl.Path = path.Join(baseUrl.Path, urlPath)
+
+	// add query params
+	values := baseUrl.Query()
+	for _, param := range queryParams {
+		values.Set(param[0], param[1])
+	}
+	baseUrl.RawQuery = values.Encode()
+
 	return baseUrl.String()
 }
 
@@ -47,8 +56,9 @@ func (c *ApiClient) credentials() url.Values {
 	return data
 }
 
-func (c *ApiClient) getRequest(urlPath string, responseObject interface{}) (err error) {
-	url_ := urlMerge(c.domain, urlPath)
+// TODO: change the order of method arguments here...
+func (c *ApiClient) getRequest(urlPath string, responseObject interface{}, queryParams ...[2]string) (err error) {
+	url_ := urlMerge(c.domain, urlPath, queryParams...)
 
 	resp, err := http.Get(url_)
 	if err != nil {
@@ -107,15 +117,78 @@ func (c *ApiClient) V2HourlyTicker(currencyPair string) (response TickerResponse
 	return
 }
 
-type V1OrderBookResponse struct {
-	Timestamp string               `json:"timestamp"` // UNIX epoch in UTC in seconds
-	Bids      [][2]decimal.Decimal `json:"bids"`
-	Asks      [][2]decimal.Decimal `json:"asks"`
+type OrderBookEntry struct {
+	Price  decimal.Decimal
+	Amount decimal.Decimal
+	Id     uint64
 }
 
-// GET https://www.bitstamp.net/api/order_book/
-func (c *ApiClient) V1OrderBook() (response V1OrderBookResponse, err error) {
-	err = c.getRequest("/api/order_book/", &response)
+// helper method that lets us unmarshal order book entries directly from API JSON responses
+func (obe *OrderBookEntry) UnmarshalJSON(bytes []byte) error {
+	if obe == nil {
+		obe = new(OrderBookEntry)
+	}
+
+	var parts []string
+	err := json.Unmarshal(bytes, &parts)
+	if err != nil {
+		return err
+	}
+
+	if len(parts) != 2 && len(parts) != 3 {
+		return fmt.Errorf("wrong number of arguments for PriceAmountId: %v", parts)
+	}
+
+	price, err := decimal.NewFromString(parts[0])
+	if err != nil {
+		return err
+	}
+	obe.Price = price
+
+	amount, err := decimal.NewFromString(parts[1])
+	if err != nil {
+		return err
+	}
+	obe.Amount = amount
+
+	if len(parts) == 3 {
+		orderId, err := strconv.ParseInt(parts[2], 10, 64)
+		if err != nil {
+			return err
+		}
+
+		obe.Id = uint64(orderId)
+	}
+
+	return nil
+}
+
+type V1OrderBookResponse struct {
+	Timestamp string           `json:"timestamp"` // UNIX epoch in UTC in seconds
+	Bids      []OrderBookEntry `json:"bids"`
+	Asks      []OrderBookEntry `json:"asks"`
+}
+
+// GET https://www.bitstamp.net/api/order_book?group=1
+func (c *ApiClient) V1OrderBook(group int) (response V1OrderBookResponse, err error) {
+	err = c.getRequest("/api/order_book/", &response, [2]string{"group", strconv.Itoa(group)})
+	return
+}
+
+type V2OrderBookResponse struct {
+	V1OrderBookResponse
+	Microtimestamp string `json:"microtimestamp"`
+}
+
+// GET https://www.bitstamp.net/api/v2/order_book/{currency_pair}?group=1
+// Possible values are for group parameter
+// - 0 (orders are not grouped at same price)
+// - 1 (orders are grouped at same price - default)
+// - 2 (orders with their order ids are not grouped at same price)
+// GET https://www.bitstamp.net/api/order_book?group=1
+func (c *ApiClient) V2OrderBook(currencyPair string, group int) (response V2OrderBookResponse, err error) {
+	urlPath := fmt.Sprintf("/api/v2/order_book/%s/", currencyPair)
+	err = c.getRequest(urlPath, &response, [2]string{"group", strconv.Itoa(group)})
 	return
 }
 
