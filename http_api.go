@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -192,55 +193,36 @@ func (c *ApiClient) V2OrderBook(currencyPair string, group int) (response V2Orde
 	return
 }
 
-type ApiV2BalancesResponse struct {
-	BchAvailable decimal.Decimal `json:"bch_available"`
-	BchBalance   decimal.Decimal `json:"bch_balance"`
-	BchReserved  decimal.Decimal `json:"bch_reserved"`
-	BchBtcFee    decimal.Decimal `json:"bchbtc_fee"`
-	BchEurFee    decimal.Decimal `json:"bcheur_fee"`
-	BchUsdFee    decimal.Decimal `json:"bchusd_fee"`
+//
+// Private Functions
+//
 
-	BtcAvailable decimal.Decimal `json:"btc_available"`
-	BtcBalance   decimal.Decimal `json:"btc_balance"`
-	BtcReserved  decimal.Decimal `json:"btc_reserved"`
-	BtcEurFee    decimal.Decimal `json:"btceur_fee"`
-	BtcUsdFee    decimal.Decimal `json:"btcusd_fee"`
-
-	EthAvailable decimal.Decimal `json:"eth_available"`
-	EthBalance   decimal.Decimal `json:"eth_balance"`
-	EthReserved  decimal.Decimal `json:"eth_reserved"`
-	EthBtcFee    decimal.Decimal `json:"ethbtc_fee"`
-	EthEurFee    decimal.Decimal `json:"etheur_fee"`
-	EthUsdFee    decimal.Decimal `json:"ethusd_fee"`
-
-	EurAvailable decimal.Decimal `json:"eur_available"`
-	EurBalance   decimal.Decimal `json:"eur_balance"`
-	EurReserved  decimal.Decimal `json:"eur_reserved"`
-	EurUsdFee    decimal.Decimal `json:"eurusd_fee"`
-
-	LtcAvailable decimal.Decimal `json:"ltc_available"`
-	LtcBalance   decimal.Decimal `json:"ltc_balance"`
-	LtcReserved  decimal.Decimal `json:"ltc_reserved"`
-	LtcBtcFee    decimal.Decimal `json:"ltcbtc_fee"`
-	LtcEurFee    decimal.Decimal `json:"ltceur_fee"`
-	LtcUsdFee    decimal.Decimal `json:"ltcusd_fee"`
-
-	UsdAvailable decimal.Decimal `json:"usd_available"`
-	UsdBalance   decimal.Decimal `json:"usd_balance"`
-	UsdReserved  decimal.Decimal `json:"usd_reserved"`
-
-	XrpAvailable decimal.Decimal `json:"xrp_available"`
-	XrpBalance   decimal.Decimal `json:"xrp_balance"`
-	XrpReserved  decimal.Decimal `json:"xrp_reserved"`
-	XrpBtcFee    decimal.Decimal `json:"xrpbtc_fee"`
-	XrpEurFee    decimal.Decimal `json:"xrpeur_fee"`
-	XrpUsdFee    decimal.Decimal `json:"xrpusd_fee"`
+// Account balance
+// User transactions
+// Open orders
+type V2OpenOrdersResponse struct {
+	Id           string          `json:"id"`
+	Datetime     string          `json:"datetime"`
+	Type         string          `json:"type"`
+	Price        decimal.Decimal `json:"price"`
+	Amount       decimal.Decimal `json:"amount"`
+	CurrencyPair string          `json:"currency_pair"`
+	Status       string          `json:"status"`
+	Reason       interface{}     `json:"reason"`
 }
 
-func (c *ApiClient) ApiV2Balances() (response ApiV2BalancesResponse, err error) {
-	endpoint := fmt.Sprintf("%s/api/v2/balance/", c.domain)
+// POST https://www.bitstamp.net/api/v2/open_orders/all/
+// POST https://www.bitstamp.net/api/v2/open_orders/{currency_pair}
+func (c *ApiClient) V2OpenOrders(currencyPairOrAll string) (response []V2OpenOrdersResponse, err error) {
+	var urlPath string
+	if currencyPairOrAll == "all" {
+		urlPath = "/api/v2/open_orders/all/"
+	} else {
+		urlPath = fmt.Sprintf("/api/v2/open_orders/%s/", currencyPairOrAll)
+	}
+	url_ := urlMerge(c.domain, urlPath)
 
-	resp, err := http.PostForm(endpoint, c.credentials())
+	resp, err := http.PostForm(url_, c.credentials())
 	if err != nil {
 		return
 	}
@@ -252,5 +234,114 @@ func (c *ApiClient) ApiV2Balances() (response ApiV2BalancesResponse, err error) 
 	}
 
 	err = json.Unmarshal(respBody, &response)
+	if err != nil {
+		return
+	}
+
 	return
+}
+
+// Order status
+// Cancel order
+type V2CancelOrderResponse struct {
+	Id     uint64          `json:"id"`
+	Amount decimal.Decimal `json:"amount"`
+	Price  decimal.Decimal `json:"price"`
+	Type   uint8           `json:"type"`
+	Error  string          `json:"error"`
+}
+
+func (c *ApiClient) V2CancelOrder(orderId string) (response V2CancelOrderResponse, err error) {
+	url_ := urlMerge(c.domain, "/api/v2/cancel_order/")
+
+	data := c.credentials()
+	data.Set("id", orderId)
+
+	resp, err := http.PostForm(url_, data)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(respBody, &response)
+	if err != nil {
+		return
+	}
+
+	if response.Error != "" {
+		err = errors.New(response.Error)
+		return
+	}
+
+	return
+}
+
+// Cancel all orders
+// Buy limit order
+// Sell limit order
+
+//{"status": "error", "reason": {"__all__": ["Price is more than 20% below market price."]}}
+//{"status": "error", "reason": {"__all__": ["You need 158338.86 USD to open that order. You have only 99991.52 USD available. Check your account balance for details."]}}
+type V2LimitOrderResponse struct {
+	Id       string          `json:"id"`
+	Datetime string          `json:"datetime"`
+	Type     string          `json:"type"`
+	Price    decimal.Decimal `json:"price"`
+	Amount   decimal.Decimal `json:"amount"`
+	Status   string          `json:"status"`
+	Reason   interface{}     `json:"reason"`
+}
+
+func (c *ApiClient) v2LimitOrder(side, currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
+	urlPath := fmt.Sprintf("/api/v2/%s/%s/", side, currencyPair)
+	url_ := urlMerge(c.domain, urlPath)
+
+	data := c.credentials()
+	data.Set("price", price.String())
+	data.Set("amount", amount.String())
+	if clOrdId != "" {
+		data.Set("client_order_id", clOrdId)
+	}
+	if dailyOrder {
+		data.Set("daily_order", "True")
+	}
+	if iocOrder {
+		data.Set("ioc_order", "True")
+	}
+
+	resp, err := http.PostForm(url_, data)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(respBody, &response)
+	if err != nil {
+		return
+	}
+
+	if response.Status == "error" {
+		err = fmt.Errorf("error placing limit %s (%s @ %s): %v", side, amount, price, response.Reason)
+		return
+	}
+
+	return
+}
+
+func (c *ApiClient) V2BuyLimitOrder(currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
+	return c.v2LimitOrder("buy", currencyPair, price, amount, limitPrice, dailyOrder, iocOrder, clOrdId)
+}
+
+func (c *ApiClient) V2SellLimitOrder(currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
+	return c.v2LimitOrder("sell", currencyPair, price, amount, limitPrice, dailyOrder, iocOrder, clOrdId)
 }
