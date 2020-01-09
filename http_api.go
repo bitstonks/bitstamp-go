@@ -20,6 +20,11 @@ import (
 func urlMerge(baseUrl url.URL, urlPath string, queryParams ...[2]string) string {
 	baseUrl.Path = path.Join(baseUrl.Path, urlPath)
 
+	// apparently, path.Join loses trailing slash in urlPath. we don't want that...
+	if strings.HasSuffix(urlPath, "/") {
+		baseUrl.Path += "/"
+	}
+
 	// add query params
 	values := baseUrl.Query()
 	for _, param := range queryParams {
