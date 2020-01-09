@@ -350,3 +350,109 @@ func (c *ApiClient) V2BuyLimitOrder(currencyPair string, price, amount, limitPri
 func (c *ApiClient) V2SellLimitOrder(currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
 	return c.v2LimitOrder("sell", currencyPair, price, amount, limitPrice, dailyOrder, iocOrder, clOrdId)
 }
+
+type V2MarketOrderResponse struct {
+	Id       string          `json:"id"`
+	Datetime string          `json:"datetime"`
+	Type     string          `json:"type"`
+	Price    decimal.Decimal `json:"price"`
+	Amount   decimal.Decimal `json:"amount"`
+	Error    string          `json:"error"`
+	Status   string          `json:"status"`
+	Reason   interface{}     `json:"reason"`
+}
+
+func (c *ApiClient) v2MarketOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
+	urlPath := fmt.Sprintf("/api/v2/%s/market/%s/", side, currencyPair)
+	url_ := urlMerge(c.domain, urlPath)
+
+	data := c.credentials()
+	data.Set("amount", amount.String())
+	if clOrdId != "" {
+		data.Set("client_order_id", clOrdId)
+	}
+
+	resp, err := http.PostForm(url_, data)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(respBody, &response)
+	if err != nil {
+		return
+	}
+
+	if response.Status == "error" {
+		err = fmt.Errorf("error placing market %s (for %s): %v", side, amount, response.Reason)
+		return
+	}
+
+	return
+}
+
+func (c *ApiClient) V2BuyMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
+	return c.v2MarketOrder("buy", currencyPair, amount, clOrdId)
+}
+
+func (c *ApiClient) V2SellMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
+	return c.v2MarketOrder("sell", currencyPair, amount, clOrdId)
+}
+
+type V2InstantOrderResponse struct {
+	Id       string          `json:"id"`
+	Datetime string          `json:"datetime"`
+	Type     string          `json:"type"`
+	Price    decimal.Decimal `json:"price"`
+	Amount   decimal.Decimal `json:"amount"`
+	Error    string          `json:"error"`
+	Status   string          `json:"status"`
+	Reason   interface{}     `json:"reason"`
+}
+
+func (c *ApiClient) v2InstantOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
+	urlPath := fmt.Sprintf("/api/v2/%s/instant/%s/", side, currencyPair)
+	url_ := urlMerge(c.domain, urlPath)
+
+	data := c.credentials()
+	data.Set("amount", amount.String())
+	if clOrdId != "" {
+		data.Set("client_order_id", clOrdId)
+	}
+
+	resp, err := http.PostForm(url_, data)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(respBody, &response)
+	if err != nil {
+		return
+	}
+
+	if response.Status == "error" {
+		err = fmt.Errorf("error placing instant %s (for %s): %v", side, amount, response.Reason)
+		return
+	}
+
+	return
+}
+
+func (c *ApiClient) V2BuyInstantOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
+	return c.v2InstantOrder("buy", currencyPair, amount, clOrdId)
+}
+
+func (c *ApiClient) V2SellInstantOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
+	return c.v2InstantOrder("sell", currencyPair, amount, clOrdId)
+}
