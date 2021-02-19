@@ -36,11 +36,11 @@ func urlMerge(baseUrl url.URL, urlPath string, queryParams ...[2]string) string 
 }
 
 type ApiClient struct {
-	*clientConfig
+	*apiClientConfig
 }
 
-func NewApiClient(options ...Option) *ApiClient {
-	config := defaultClientConfig()
+func NewApiClient(options ...ApiOption) *ApiClient {
+	config := defaultApiClientConfig()
 	for _, option := range options {
 		option(config)
 	}
