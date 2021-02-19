@@ -203,6 +203,140 @@ func (c *ApiClient) V2OrderBook(currencyPair string, group int) (response V2Orde
 //
 
 // Account balance
+type V2BalanceResponse struct {
+	// currencies
+	BchAvailable      decimal.Decimal `json:"bch_available"`
+	BchBalance        decimal.Decimal `json:"bch_balance"`
+	BchReserved       decimal.Decimal `json:"bch_reserved"`
+	BchWithdrawalFee  decimal.Decimal `json:"bch_withdrawal_fee"`
+	BtcAvailable      decimal.Decimal `json:"btc_available"`
+	BtcBalance        decimal.Decimal `json:"btc_balance"`
+	BtcReserved       decimal.Decimal `json:"btc_reserved"`
+	BtcWithdrawalFee  decimal.Decimal `json:"btc_withdrawal_fee"`
+	EthAvailable      decimal.Decimal `json:"eth_available"`
+	EthBalance        decimal.Decimal `json:"eth_balance"`
+	EthReserved       decimal.Decimal `json:"eth_reserved"`
+	EthWithdrawalFee  decimal.Decimal `json:"eth_withdrawal_fee"`
+	EurAvailable      decimal.Decimal `json:"eur_available"`
+	EurBalance        decimal.Decimal `json:"eur_balance"`
+	EurReserved       decimal.Decimal `json:"eur_reserved"`
+	EurWithdrawalFee  decimal.Decimal `json:"eur_withdrawal_fee"`
+	GbpAvailable      decimal.Decimal `json:"gbp_available"`
+	GbpBalance        decimal.Decimal `json:"gbp_balance"`
+	GbpReserved       decimal.Decimal `json:"gbp_reserved"`
+	GbpWithdrawalFee  decimal.Decimal `json:"gbp_withdrawal_fee"`
+	LinkAvailable     decimal.Decimal `json:"link_available"`
+	LinkBalance       decimal.Decimal `json:"link_balance"`
+	LinkReserved      decimal.Decimal `json:"link_reserved"`
+	LinkWithdrawalFee decimal.Decimal `json:"link_withdrawal_fee"`
+	LtcAvailable      decimal.Decimal `json:"ltc_available"`
+	LtcBalance        decimal.Decimal `json:"ltc_balance"`
+	LtcReserved       decimal.Decimal `json:"ltc_reserved"`
+	LtcWithdrawalFee  decimal.Decimal `json:"ltc_withdrawal_fee"`
+	OmgAvailable      decimal.Decimal `json:"omg_available"`
+	OmgBalance        decimal.Decimal `json:"omg_balance"`
+	OmgReserved       decimal.Decimal `json:"omg_reserved"`
+	OmgWithdrawalFee  decimal.Decimal `json:"omg_withdrawal_fee"`
+	PaxAvailable      decimal.Decimal `json:"pax_available"`
+	PaxBalance        decimal.Decimal `json:"pax_balance"`
+	PaxReserved       decimal.Decimal `json:"pax_reserved"`
+	PaxWithdrawalFee  decimal.Decimal `json:"pax_withdrawal_fee"`
+	UsdAvailable      decimal.Decimal `json:"usd_available"`
+	UsdBalance        decimal.Decimal `json:"usd_balance"`
+	UsdReserved       decimal.Decimal `json:"usd_reserved"`
+	UsdWithdrawalFee  decimal.Decimal `json:"usd_withdrawal_fee"`
+	UsdcAvailable     decimal.Decimal `json:"usdc_available"`
+	UsdcBalance       decimal.Decimal `json:"usdc_balance"`
+	UsdcReserved      decimal.Decimal `json:"usdc_reserved"`
+	UsdcWithdrawalFee decimal.Decimal `json:"usdc_withdrawal_fee"`
+	XlmAvailable      decimal.Decimal `json:"xlm_available"`
+	XlmBalance        decimal.Decimal `json:"xlm_balance"`
+	XlmReserved       decimal.Decimal `json:"xlm_reserved"`
+	XlmWithdrawalFee  decimal.Decimal `json:"xlm_withdrawal_fee"`
+	XrpAvailable      decimal.Decimal `json:"xrp_available"`
+	XrpBalance        decimal.Decimal `json:"xrp_balance"`
+	XrpReserved       decimal.Decimal `json:"xrp_reserved"`
+	XrpWithdrawalFee  decimal.Decimal `json:"xrp_withdrawal_fee"`
+
+	// pairs
+	BchbtcFee  decimal.Decimal `json:"bchbtc_fee"`
+	BcheurFee  decimal.Decimal `json:"bcheur_fee"`
+	BchgbpFee  decimal.Decimal `json:"bchgbp_fee"`
+	BchusdFee  decimal.Decimal `json:"bchusd_fee"`
+	BtceurFee  decimal.Decimal `json:"btceur_fee"`
+	BtcgbpFee  decimal.Decimal `json:"btcgbp_fee"`
+	BtcpaxFee  decimal.Decimal `json:"btcpax_fee"`
+	BtcusdcFee decimal.Decimal `json:"btcusdc_fee"`
+	BtcusdFee  decimal.Decimal `json:"btcusd_fee"`
+	EthbtcFee  decimal.Decimal `json:"ethbtc_fee"`
+	EtheurFee  decimal.Decimal `json:"etheur_fee"`
+	EthgbpFee  decimal.Decimal `json:"ethgbp_fee"`
+	EthpaxFee  decimal.Decimal `json:"ethpax_fee"`
+	EthusdcFee decimal.Decimal `json:"ethusdc_fee"`
+	EthusdFee  decimal.Decimal `json:"ethusd_fee"`
+	EurusdFee  decimal.Decimal `json:"eurusd_fee"`
+	GbpeurFee  decimal.Decimal `json:"gbpeur_fee"`
+	GbpusdFee  decimal.Decimal `json:"gbpusd_fee"`
+	LinkbtcFee decimal.Decimal `json:"linkbtc_fee"`
+	LinkethFee decimal.Decimal `json:"linketh_fee"`
+	LinkeurFee decimal.Decimal `json:"linkeur_fee"`
+	LinkgbpFee decimal.Decimal `json:"linkgbp_fee"`
+	LinkusdFee decimal.Decimal `json:"linkusd_fee"`
+	LtcbtcFee  decimal.Decimal `json:"ltcbtc_fee"`
+	LtceurFee  decimal.Decimal `json:"ltceur_fee"`
+	LtcgbpFee  decimal.Decimal `json:"ltcgbp_fee"`
+	LtcusdFee  decimal.Decimal `json:"ltcusd_fee"`
+	OmgbtcFee  decimal.Decimal `json:"omgbtc_fee"`
+	OmgeurFee  decimal.Decimal `json:"omgeur_fee"`
+	OmggbpFee  decimal.Decimal `json:"omggbp_fee"`
+	OmgusdFee  decimal.Decimal `json:"omgusd_fee"`
+	PaxeurFee  decimal.Decimal `json:"paxeur_fee"`
+	PaxgbpFee  decimal.Decimal `json:"paxgbp_fee"`
+	PaxusdFee  decimal.Decimal `json:"paxusd_fee"`
+	UsdceurFee decimal.Decimal `json:"usdceur_fee"`
+	UsdcusdFee decimal.Decimal `json:"usdcusd_fee"`
+	XlmbtcFee  decimal.Decimal `json:"xlmbtc_fee"`
+	XlmeurFee  decimal.Decimal `json:"xlmeur_fee"`
+	XlmgbpFee  decimal.Decimal `json:"xlmgbp_fee"`
+	XlmusdFee  decimal.Decimal `json:"xlmusd_fee"`
+	XrpbtcFee  decimal.Decimal `json:"xrpbtc_fee"`
+	XrpeurFee  decimal.Decimal `json:"xrpeur_fee"`
+	XrpgbpFee  decimal.Decimal `json:"xrpgbp_fee"`
+	XrppaxFee  decimal.Decimal `json:"xrppax_fee"`
+	XrpusdFee  decimal.Decimal `json:"xrpusd_fee"`
+
+	// fee
+	Fee decimal.Decimal `json:"fee"`
+}
+
+// POST https://www.bitstamp.net/api/v2/balance/
+func (c *ApiClient) V2Balance(currencyPair ...string) (response V2BalanceResponse, err error) {
+	url_ := urlMerge(c.domain, "/v2/balance/")
+
+	data := c.credentials()
+	if len(currencyPair) > 0 {
+		data.Set("currency_pair", currencyPair[0]) // using variadic args to avoid some extra value for "everything"
+	}
+
+	resp, err := http.PostForm(url_, c.credentials())
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(respBody, &response)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 // User transactions
 // Open orders
 type V2OpenOrdersResponse struct {
