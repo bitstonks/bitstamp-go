@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const bitstampApiUrl = "https://www.bitstamp.net"
+const bitstampApiUrl = "https://www.bitstamp.net/api"
 
 type apiClientConfig struct {
 	domain         url.URL

@@ -99,26 +99,26 @@ type TickerResponse struct {
 
 // GET https://www.bitstamp.net/api/ticker/
 func (c *ApiClient) V1Ticker() (response TickerResponse, err error) {
-	err = c.getRequest("/api/ticker/", &response)
+	err = c.getRequest("/ticker/", &response)
 	return
 }
 
 // GET https://www.bitstamp.net/api/v2/ticker/{currency_pair}/
 func (c *ApiClient) V2Ticker(currencyPair string) (response TickerResponse, err error) {
-	urlPath := fmt.Sprintf("/api/v2/ticker/%s/", currencyPair)
+	urlPath := fmt.Sprintf("/v2/ticker/%s/", currencyPair)
 	err = c.getRequest(urlPath, &response)
 	return
 }
 
 // GET https://www.bitstamp.net/api/ticker_hour/
 func (c *ApiClient) V1HourlyTicker() (response TickerResponse, err error) {
-	err = c.getRequest("/api/ticker_hour/", &response)
+	err = c.getRequest("/ticker_hour/", &response)
 	return
 }
 
 // GET https://www.bitstamp.net/api/v2/ticker_hour/{currency_pair}/
 func (c *ApiClient) V2HourlyTicker(currencyPair string) (response TickerResponse, err error) {
-	urlPath := fmt.Sprintf("/api/v2/ticker_hour/%s/", currencyPair)
+	urlPath := fmt.Sprintf("/v2/ticker_hour/%s/", currencyPair)
 	err = c.getRequest(urlPath, &response)
 	return
 }
@@ -177,7 +177,7 @@ type V1OrderBookResponse struct {
 
 // GET https://www.bitstamp.net/api/order_book?group=1
 func (c *ApiClient) V1OrderBook(group int) (response V1OrderBookResponse, err error) {
-	err = c.getRequest("/api/order_book/", &response, [2]string{"group", strconv.Itoa(group)})
+	err = c.getRequest("/order_book/", &response, [2]string{"group", strconv.Itoa(group)})
 	return
 }
 
@@ -193,7 +193,7 @@ type V2OrderBookResponse struct {
 // - 2 (orders with their order ids are not grouped at same price)
 // GET https://www.bitstamp.net/api/order_book?group=1
 func (c *ApiClient) V2OrderBook(currencyPair string, group int) (response V2OrderBookResponse, err error) {
-	urlPath := fmt.Sprintf("/api/v2/order_book/%s/", currencyPair)
+	urlPath := fmt.Sprintf("/v2/order_book/%s/", currencyPair)
 	err = c.getRequest(urlPath, &response, [2]string{"group", strconv.Itoa(group)})
 	return
 }
@@ -221,9 +221,9 @@ type V2OpenOrdersResponse struct {
 func (c *ApiClient) V2OpenOrders(currencyPairOrAll string) (response []V2OpenOrdersResponse, err error) {
 	var urlPath string
 	if currencyPairOrAll == "all" {
-		urlPath = "/api/v2/open_orders/all/"
+		urlPath = "/v2/open_orders/all/"
 	} else {
-		urlPath = fmt.Sprintf("/api/v2/open_orders/%s/", currencyPairOrAll)
+		urlPath = fmt.Sprintf("/v2/open_orders/%s/", currencyPairOrAll)
 	}
 	url_ := urlMerge(c.domain, urlPath)
 
@@ -257,7 +257,7 @@ type V2CancelOrderResponse struct {
 }
 
 func (c *ApiClient) V2CancelOrder(orderId string) (response V2CancelOrderResponse, err error) {
-	url_ := urlMerge(c.domain, "/api/v2/cancel_order/")
+	url_ := urlMerge(c.domain, "/v2/cancel_order/")
 
 	data := c.credentials()
 	data.Set("id", orderId)
@@ -303,7 +303,7 @@ type V2LimitOrderResponse struct {
 }
 
 func (c *ApiClient) v2LimitOrder(side, currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
-	urlPath := fmt.Sprintf("/api/v2/%s/%s/", side, currencyPair)
+	urlPath := fmt.Sprintf("/v2/%s/%s/", side, currencyPair)
 	url_ := urlMerge(c.domain, urlPath)
 
 	data := c.credentials()
@@ -363,7 +363,7 @@ type V2MarketOrderResponse struct {
 }
 
 func (c *ApiClient) v2MarketOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
-	urlPath := fmt.Sprintf("/api/v2/%s/market/%s/", side, currencyPair)
+	urlPath := fmt.Sprintf("/v2/%s/market/%s/", side, currencyPair)
 	url_ := urlMerge(c.domain, urlPath)
 
 	data := c.credentials()
@@ -416,7 +416,7 @@ type V2InstantOrderResponse struct {
 }
 
 func (c *ApiClient) v2InstantOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
-	urlPath := fmt.Sprintf("/api/v2/%s/instant/%s/", side, currencyPair)
+	urlPath := fmt.Sprintf("/v2/%s/instant/%s/", side, currencyPair)
 	url_ := urlMerge(c.domain, urlPath)
 
 	data := c.credentials()
