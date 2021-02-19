@@ -4,6 +4,8 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,4 +32,13 @@ func TestUrlMerge(t *testing.T) {
 			assert.Equal(t, c.expectedResult, actual)
 		})
 	}
+}
+
+func TestApiClient_V2Ticker(t *testing.T) {
+	c := NewApiClient()
+	resp, err := c.V2Ticker("btcusd")
+
+	assert.NoError(t, err)
+	assert.IsType(t, decimal.Decimal{}, resp.Volume)
+	assert.True(t, resp.High.GreaterThanOrEqual(resp.Low))
 }
