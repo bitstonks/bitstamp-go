@@ -1,5 +1,5 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/samotarnik/bitstamp-go)](https://goreportcard.com/report/github.com/samotarnik/bitstamp-go)
-[![CircleCI](https://circleci.com/gh/samotarnik/bitstamp-go/tree/dump.svg?style=svg)](https://circleci.com/gh/samotarnik/bitstamp-go/tree/dump)
+[![CircleCI](https://circleci.com/gh/samotarnik/bitstamp-go/tree/develop.svg?style=svg)](https://circleci.com/gh/samotarnik/bitstamp-go/tree/develop)
 
 # bitstamp-go
 
@@ -10,7 +10,7 @@ of Pusher (which is not available anymore).
 
 ## Requirements
 
-* Go 1.12+
+* Go 1.15+
 * Dependencies in `go.mod`
 
 ## Usage examples
