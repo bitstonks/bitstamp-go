@@ -9,9 +9,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const bitstampWsUrl = "wss://ws.bitstamp.net"
-const wsTimeout = 60 * time.Second
-
 type WsEvent struct {
 	Event   string      `json:"event"`
 	Channel string      `json:"channel"`
@@ -19,6 +16,7 @@ type WsEvent struct {
 }
 
 type WsClient struct {
+	*wsClientConfig
 	ws       *websocket.Conn
 	done     chan bool
 	sendLock sync.Mutex
@@ -26,15 +24,21 @@ type WsClient struct {
 	Errors   chan error
 }
 
-func NewWsClient() (*WsClient, error) {
+func NewWsClient(options ...WsOption) (*WsClient, error) {
+	cfg := defaultWsClientConfig()
+	for _, opt := range options {
+		opt(cfg)
+	}
+
 	c := WsClient{
-		done:   make(chan bool, 1),
-		Stream: make(chan *WsEvent),
-		Errors: make(chan error),
+		wsClientConfig: cfg,
+		done:           make(chan bool, 1),
+		Stream:         make(chan *WsEvent),
+		Errors:         make(chan error),
 	}
 
 	// set up websocket
-	ws, _, err := websocket.DefaultDialer.Dial(bitstampWsUrl, nil)
+	ws, _, err := websocket.DefaultDialer.Dial(c.domain, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing websocket: %s", err)
 	}
@@ -46,7 +50,7 @@ func NewWsClient() (*WsClient, error) {
 	go func() {
 		defer c.ws.Close()
 		for {
-			c.ws.SetReadDeadline(time.Now().Add(wsTimeout))
+			c.ws.SetReadDeadline(time.Now().Add(c.timeout))
 			select {
 			case <-c.done:
 				return
