@@ -3,6 +3,8 @@ package bitstamp
 import (
 	"net/url"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUrlMerge(t *testing.T) {
@@ -25,9 +27,7 @@ func TestUrlMerge(t *testing.T) {
 	for _, c := range cases {
 		t.Run("test url merge", func(t *testing.T) {
 			actual := urlMerge(c.urlBase, c.path, c.queryParams...)
-			if actual != c.expectedResult {
-				t.Errorf("expected %s, got %s", c.expectedResult, actual)
-			}
+			assert.Equal(t, c.expectedResult, actual)
 		})
 	}
 }
