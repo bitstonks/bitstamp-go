@@ -104,6 +104,14 @@ func (c *WsClient) Unsubscribe(channels ...string) {
 	}
 }
 
+// Determines whether server is requesting reconnect. If such a request is made by the server,
+// we should immediately reconnect.
+// Note: Bitstamp ensures, that once such a request is received by the client, any new websocket client is connected
+// to a healthy server.
+func (c *WsClient) IsReconnectRequest(event *WsEvent) bool {
+	return event.Event == "bts:request_reconnect"
+}
+
 func (c *WsClient) sendEvent(sub WsEvent) {
 	c.sendLock.Lock()
 	defer c.sendLock.Unlock()
