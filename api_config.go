@@ -1,10 +1,10 @@
 package bitstamp
 
 import (
-	"fmt"
 	"log"
 	"net/url"
-	"time"
+
+	"github.com/google/uuid"
 )
 
 const bitstampApiUrl = "https://www.bitstamp.net/api"
@@ -54,6 +54,7 @@ func NonceGenerator(nonceGen func() string) ApiOption {
 	}
 }
 
+// 10x slower the than previous `fmt.Sprintf("%d", time.Now().UnixNano())`, should i worry?
 func defaultNonce() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano())
+	return uuid.NewString()
 }
