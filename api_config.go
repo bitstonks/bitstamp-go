@@ -1,8 +1,10 @@
 package bitstamp
 
 import (
+	"fmt"
 	"log"
 	"net/url"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -10,11 +12,12 @@ import (
 const bitstampApiUrl = "https://www.bitstamp.net/api"
 
 type apiClientConfig struct {
-	domain         url.URL
-	username       string
-	apiKey         string
-	apiSecret      string
-	nonceGenerator func() string
+	domain             url.URL
+	username           string
+	apiKey             string
+	apiSecret          string
+	nonceGenerator     func() string
+	timestampGenerator func() string
 }
 
 func defaultApiClientConfig() *apiClientConfig {
@@ -23,8 +26,9 @@ func defaultApiClientConfig() *apiClientConfig {
 		log.Panicf("error parsing domain %s: %v", bitstampApiUrl, err)
 	}
 	return &apiClientConfig{
-		domain:         *domain,
-		nonceGenerator: defaultNonce,
+		domain:             *domain,
+		nonceGenerator:     defaultNonce,
+		timestampGenerator: timestamp,
 	}
 }
 
@@ -57,4 +61,9 @@ func NonceGenerator(nonceGen func() string) ApiOption {
 // 10x slower the than previous `fmt.Sprintf("%d", time.Now().UnixNano())`, should i worry?
 func defaultNonce() string {
 	return uuid.NewString()
+}
+
+// not having an ApiOption for this by design, the timestamp is prescribed by API specification
+func timestamp() string {
+	return fmt.Sprintf("%d", time.Now().UTC().UnixNano()/1000000)
 }
