@@ -614,29 +614,8 @@ type V2OpenOrdersResponse struct {
 // POST https://www.bitstamp.net/api/v2/open_orders/all/
 // POST https://www.bitstamp.net/api/v2/open_orders/{currency_pair}
 func (c *ApiClient) V2OpenOrders(currencyPairOrAll string) (response []V2OpenOrdersResponse, err error) {
-	var urlPath string
-	if currencyPairOrAll == "all" {
-		urlPath = "/v2/open_orders/all/"
-	} else {
-		urlPath = fmt.Sprintf("/v2/open_orders/%s/", currencyPairOrAll)
-	}
-	url_ := urlMerge(c.domain, urlPath)
-
-	resp, err := http.PostForm(url_, c.credentials())
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(respBody, &response)
-	if err != nil {
-		return
-	}
+	urlPath := fmt.Sprintf("/v2/open_orders/%s/", currencyPairOrAll)
+	err = c.authenticatedPostRequest(&response, urlPath)
 
 	return
 }
