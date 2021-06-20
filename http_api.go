@@ -542,6 +542,63 @@ func (c *ApiClient) V2Balance(currencyPairOrAll string) (response V2BalanceRespo
 }
 
 // User transactions
+type V2UserTransactionsResponse struct {
+	Datetime string          `json:"datetime"`
+	Fee      decimal.Decimal `json:"fee"`
+	Id       int64           `json:"id"`
+	OrderId  int64           `json:"order_id"`
+	Type     int             `json:"type"`
+
+	Status string      `json:"status"`
+	Reason interface{} `json:"reason"`
+
+	// amounts
+	Aave   decimal.Decimal `json:"aave"`
+	Algo   decimal.Decimal `json:"algo"`
+	Audio  decimal.Decimal `json:"audio"`
+	Bat    decimal.Decimal `json:"bat"`
+	Bch    decimal.Decimal `json:"bch"`
+	Btc    decimal.Decimal `json:"btc"`
+	Comp   decimal.Decimal `json:"comp"`
+	Crv    decimal.Decimal `json:"crv"`
+	Dai    decimal.Decimal `json:"dai"`
+	Eth    decimal.Decimal `json:"eth"`
+	Eth2   decimal.Decimal `json:"eth2"`
+	Eth2r  decimal.Decimal `json:"eth2r"`
+	Eur    decimal.Decimal `json:"eur"`
+	Gbp    decimal.Decimal `json:"gbp"`
+	Grt    decimal.Decimal `json:"grt"`
+	Gusd   decimal.Decimal `json:"gusd"`
+	Knc    decimal.Decimal `json:"knc"`
+	Link   decimal.Decimal `json:"link"`
+	Ltc    decimal.Decimal `json:"ltc"`
+	Mkr    decimal.Decimal `json:"mkr"`
+	Omg    decimal.Decimal `json:"omg"`
+	Pax    decimal.Decimal `json:"pax"`
+	Snx    decimal.Decimal `json:"snx"`
+	Uma    decimal.Decimal `json:"uma"`
+	Uni    decimal.Decimal `json:"uni"`
+	Usd    decimal.Decimal `json:"usd"`
+	Usdc   decimal.Decimal `json:"usdc"`
+	Usdt   decimal.Decimal `json:"usdt"`
+	Xlm    decimal.Decimal `json:"xlm"`
+	Xrp    decimal.Decimal `json:"xrp"`
+	Yfi    decimal.Decimal `json:"yfi"`
+	Zrx    decimal.Decimal `json:"zrx"`
+	BtcUsd decimal.Decimal `json:"btc_usd"`
+}
+
+// TODO: add arguments!
+func (c *ApiClient) V2UserTransactions(currencyPairOrAll string) (response []V2UserTransactionsResponse, err error) {
+	if currencyPairOrAll == "all" {
+		err = c.authenticatedPostRequest(&response, "/v2/user_transactions/", [2]string{"limit", "1000"})
+	} else {
+		err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/user_transactions/%s/", currencyPairOrAll), [2]string{"limit", "1000"})
+	}
+
+	return
+}
+
 // Open orders
 type V2OpenOrdersResponse struct {
 	Id           string          `json:"id"`
