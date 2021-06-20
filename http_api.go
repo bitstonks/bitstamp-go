@@ -1,6 +1,7 @@
 package bitstamp
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -78,6 +79,103 @@ func (c *ApiClient) getRequest(urlPath string, responseObject interface{}, query
 	}
 
 	err = json.Unmarshal(respBody, responseObject)
+	return
+}
+
+func (c *ApiClient) authenticatedPostRequest(responseObject interface{}, urlPath string, queryParams ...[2]string) (err error) {
+	authVersion := "v2"
+	method := "POST"
+	xAuth := "BITSTAMP " + c.apiKey
+	apiSecret := []byte(c.apiSecret)
+	contentType := "application/x-www-form-urlencoded"
+	timestamp_ := c.timestampGenerator()
+	nonce := c.nonceGenerator()
+	url_ := urlMerge(c.domain, urlPath)
+
+	var payloadString string
+	if queryParams != nil {
+		urlParams := url.Values{}
+		for _, p := range queryParams {
+			urlParams.Set(p[0], p[1]) // TODO: or is it .Add() here? any array arguments in the documentation?
+		}
+		payloadString = urlParams.Encode()
+	}
+
+	// message construction
+	msg := xAuth + method + strings.TrimPrefix(url_, "https://")
+	if queryParams == nil {
+		msg = msg + nonce + timestamp_ + authVersion // TODO: apparently, contentType must be omitted here?
+	} else {
+		msg = msg + contentType + nonce + timestamp_ + authVersion + payloadString
+	}
+	sig := hmac.New(sha256.New, apiSecret)
+	sig.Write([]byte(msg))
+	signature := hex.EncodeToString(sig.Sum(nil))
+
+	// do the request
+	client := &http.Client{}
+	var req *http.Request
+	if queryParams == nil {
+		req, err = http.NewRequest(method, url_, nil)
+	} else {
+		req, err = http.NewRequest(method, url_, bytes.NewBuffer([]byte(payloadString)))
+	}
+	if err != nil {
+		return
+	}
+	req.Header.Add("X-Auth", xAuth)
+	req.Header.Add("X-Auth-Signature", signature)
+	req.Header.Add("X-Auth-Nonce", nonce)
+	req.Header.Add("X-Auth-Timestamp", timestamp_)
+	req.Header.Add("X-Auth-Version", authVersion)
+	if queryParams != nil {
+		req.Header.Add("Content-Type", contentType)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	// handle response
+	if resp.StatusCode != 200 {
+		var errorMsg map[string]interface{}
+		err = json.Unmarshal(respBody, &errorMsg)
+		if err != nil {
+			return
+		}
+
+		reasonVal, reasonPresent := errorMsg["reason"]
+		codeVal, codePresent := errorMsg["code"]
+		if reasonPresent && codePresent {
+			err = fmt.Errorf("%s %s (%d)", codeVal, reasonVal, resp.StatusCode)
+			return
+		} else {
+			err = fmt.Errorf("%s (%d)", string(respBody), resp.StatusCode)
+			return
+		}
+	} else {
+		// verify server signature
+		checkMsg := nonce + timestamp_ + resp.Header.Get("Content-Type") + string(respBody)
+		sig := hmac.New(sha256.New, apiSecret)
+		sig.Write([]byte(checkMsg))
+		serverSig := hex.EncodeToString(sig.Sum(nil))
+		if serverSig != resp.Header.Get("X-Server-Auth-Signature") {
+			err = fmt.Errorf("server signature mismatch: us (%s) them (%s)", serverSig, resp.Header.Get("X-Server-Auth-Signature"))
+			return
+		}
+
+		err = json.Unmarshal(respBody, responseObject)
+		if err != nil {
+			return
+		}
+	}
+
 	return
 }
 
