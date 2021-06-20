@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -408,28 +407,13 @@ type V2BalanceResponse struct {
 }
 
 // POST https://www.bitstamp.net/api/v2/balance/
-func (c *ApiClient) V2Balance(currencyPair ...string) (response V2BalanceResponse, err error) {
-	url_ := urlMerge(c.domain, "/v2/balance/")
-
-	data := c.credentials()
-	if len(currencyPair) > 0 {
-		data.Set("currency_pair", currencyPair[0]) // using variadic args to avoid some extra value for "everything"
-	}
-
-	resp, err := http.PostForm(url_, c.credentials())
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(respBody, &response)
-	if err != nil {
-		return
+// POST https://www.bitstamp.net/api/v2/balance/{currency_pair}/
+func (c *ApiClient) V2Balance(currencyPairOrAll string) (response V2BalanceResponse, err error) {
+	// TODO: validate currency pair
+	if currencyPairOrAll == "all" {
+		err = c.authenticatedPostRequest(&response, "/v2/balance/")
+	} else {
+		err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/balance/%s/", currencyPairOrAll))
 	}
 
 	return
@@ -489,32 +473,7 @@ type V2CancelOrderResponse struct {
 }
 
 func (c *ApiClient) V2CancelOrder(orderId string) (response V2CancelOrderResponse, err error) {
-	url_ := urlMerge(c.domain, "/v2/cancel_order/")
-
-	data := c.credentials()
-	data.Set("id", orderId)
-
-	resp, err := http.PostForm(url_, data)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(respBody, &response)
-	if err != nil {
-		return
-	}
-
-	if response.Error != "" {
-		err = errors.New(response.Error)
-		return
-	}
-
+	err = c.authenticatedPostRequest(&response, "/v2/cancel_order/", [2]string{"id", orderId})
 	return
 }
 
