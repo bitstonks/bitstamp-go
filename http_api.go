@@ -101,7 +101,7 @@ func (c *ApiClient) authenticatedPostRequest(responseObject interface{}, urlPath
 	}
 
 	// message construction
-	msg := xAuth + method + strings.TrimPrefix(url_, "https://")
+	msg := xAuth + method + strings.TrimPrefix(strings.TrimPrefix(url_, "https://"), "http://")
 	if queryParams == nil {
 		msg = msg + nonce + timestamp_ + authVersion // TODO: apparently, contentType must be omitted here?
 	} else {
