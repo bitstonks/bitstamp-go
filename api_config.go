@@ -18,6 +18,9 @@ type apiClientConfig struct {
 	apiSecret          string
 	nonceGenerator     func() string
 	timestampGenerator func() string
+	// have client implicitly round input prices/amounts to correct number of decimal places.
+	// used solely for consumers' convenience and will probably be removed at some point.
+	autoRounding bool
 }
 
 func defaultApiClientConfig() *apiClientConfig {
@@ -55,6 +58,12 @@ func Credentials(customerId string, apiKey string, apiSecret string) ApiOption {
 func NonceGenerator(nonceGen func() string) ApiOption {
 	return func(config *apiClientConfig) {
 		config.nonceGenerator = nonceGen
+	}
+}
+
+func AutoRoundingEnabled() ApiOption {
+	return func(config *apiClientConfig) {
+		config.autoRounding = true
 	}
 }
 
