@@ -547,7 +547,7 @@ type V2UserTransactionsResponse struct {
 	Fee      decimal.Decimal `json:"fee"`
 	Id       int64           `json:"id"`
 	OrderId  int64           `json:"order_id"`
-	Type     int             `json:"type"`
+	Type     string          `json:"type"`
 
 	Status string      `json:"status"`
 	Reason interface{} `json:"reason"`
