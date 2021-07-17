@@ -758,40 +758,34 @@ type V2LimitOrderResponse struct {
 
 func (c *ApiClient) v2LimitOrder(side, currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/%s/%s/", side, currencyPair)
-	url_ := urlMerge(c.domain, urlPath)
 
-	data := c.credentials()
-	data.Set("price", price.String())
-	data.Set("amount", amount.String())
-	if clOrdId != "" {
-		data.Set("client_order_id", clOrdId)
+	if c.autoRounding {
+		// TODO: we probably need "smarter" (stingier?) rounding here...
+		amount = amount.Round(roundings[currencyPair].Base)
+		price = price.Round(roundings[currencyPair].Counter)
 	}
+
+	params := make([][2]string, 0)
+	params = append(params, [2]string{"amount", amount.String()})
+	params = append(params, [2]string{"price", price.String()})
 	if dailyOrder {
-		data.Set("daily_order", "True")
+		params = append(params, [2]string{"daily_order", "True"})
 	}
 	if iocOrder {
-		data.Set("ioc_order", "True")
+		params = append(params, [2]string{"ioc_order", "True"})
 	}
-
-	resp, err := http.PostForm(url_, data)
-	if err != nil {
-		return
+	if clOrdId != "" {
+		params = append(params, [2]string{"client_order_id", clOrdId})
 	}
-	defer resp.Body.Close()
+	// TODO: limitPrice !
 
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(respBody, &response)
+	err = c.authenticatedPostRequest(&response, urlPath, params...)
 	if err != nil {
 		return
 	}
 
 	if response.Status == "error" {
 		err = fmt.Errorf("error placing limit %s (%s @ %s): %v", side, amount, price, response.Reason)
-		return
 	}
 
 	return
