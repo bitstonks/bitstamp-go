@@ -782,8 +782,8 @@ type V2CancelOrderResponse struct {
 	Error  string          `json:"error"`
 }
 
-func (c *ApiClient) V2CancelOrder(orderId string) (response V2CancelOrderResponse, err error) {
-	err = c.authenticatedPostRequest(&response, "/v2/cancel_order/", [2]string{"id", orderId})
+func (c *ApiClient) V2CancelOrder(orderId int64) (response V2CancelOrderResponse, err error) {
+	err = c.authenticatedPostRequest(&response, "/v2/cancel_order/", [2]string{"id", fmt.Sprintf("%d", orderId)})
 	return
 }
 
