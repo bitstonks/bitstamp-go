@@ -725,8 +725,55 @@ func (c *ApiClient) V2OpenOrders(currencyPairOrAll string) (response []V2OpenOrd
 	return
 }
 
+//
 // Order status
+//
+type V2OrderStatusTransaction struct {
+	Btc      decimal.Decimal `json:"btc"`
+	Datetime string          `json:"datetime"`
+	Fee      decimal.Decimal `json:"fee"`
+	Price    decimal.Decimal `json:"price"`
+	Tid      int64           `json:"tid"`
+	Type     int             `json:"type"`
+	Usd      decimal.Decimal `json:"usd"`
+}
+
+type V2OrderStatusResponse struct {
+	Id              int64                      `json:"id"`
+	Status          string                     `json:"status"`
+	Transactions    []V2OrderStatusTransaction `json:"transactions"`
+	AmountRemaining decimal.Decimal            `json:"amount_remaining"`
+	ClientOrderId   string                     `json:"client_order_id"`
+
+	Reason interface{} `json:"reason"`
+}
+
+// POST https://www.bitstamp.net/api/v2/order_status/
+func (c *ApiClient) V2OrderStatus(orderId int64, clOrdId string, omitTx bool) (response V2OrderStatusResponse, err error) {
+	params := make([][2]string, 0)
+	params = append(params, [2]string{"id", fmt.Sprintf("%d", orderId)})
+	if clOrdId != "" {
+		params = append(params, [2]string{"client_order_id", clOrdId})
+	}
+	if omitTx {
+		params = append(params, [2]string{"omit_transactions", "true"})
+	}
+
+	err = c.authenticatedPostRequest(&response, "/v2/order_status/", params...)
+	if err != nil {
+		return
+	}
+
+	if response.Status == "error" {
+		err = fmt.Errorf("error: %v", response.Reason)
+	}
+
+	return
+}
+
+//
 // Cancel order
+//
 type V2CancelOrderResponse struct {
 	Id     uint64          `json:"id"`
 	Amount decimal.Decimal `json:"amount"`
