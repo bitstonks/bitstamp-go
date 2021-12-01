@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/samotarnik/bitstamp-go)](https://goreportcard.com/report/github.com/samotarnik/bitstamp-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/bitstonks/bitstamp-go)](https://goreportcard.com/report/github.com/bitstonks/bitstamp-go)
 
 # bitstamp-go
 
@@ -9,7 +9,7 @@ of Pusher (which is not available anymore).
 
 ## Requirements
 
-* Go 1.15+
+* Go 1.17+
 * Dependencies in `go.mod`
 
 ## Usage examples
@@ -23,9 +23,9 @@ $ go run examples/http_api/http_api.go
 
 ## TODO
 
-* Upgrade Go.
-* Configure Github Actions.
-* Update pairs.
+* Change project structure to [https://github.com/golang-standards/project-layout](https://github.com/golang-standards/project-layout).
+* Configure GitHub Actions.
+* Update pairs config.
 * Finish implementing all the endpoints.
 * Remove/deprecate REST v1.
 * Godoc / documentation.
