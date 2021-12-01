@@ -24,6 +24,14 @@ $ go run examples/http_api/http_api.go
 
 ## TODO
 
-* godoc
-* tests
-* Docker builds
+* Upgrade Go.
+* Configure Github Actions.
+* Update pairs.
+* Finish implementing all the endpoints.
+* Remove/deprecate REST v1.
+* Godoc / documentation.
+* More tests.
+* E2E tests against Bitstamp's API.
+* Docker builds.
+* Authors file / information?
+* Shadow order book creation. (Is this an example? A separate project even?)
