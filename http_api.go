@@ -802,7 +802,8 @@ func (c *ApiClient) V2TokenDepositAddress(token *string) (response V2TokenDeposi
 }
 
 type V2TokenDepositAddres struct {
-	Address string `json:"address"`
+	Address        string `json:"address"`
+	DestinationTag int64  `json:"destination_tag"`
 }
 
 type V2OpenBankWithdrawalRequest struct {
@@ -868,7 +869,6 @@ func (c *ApiClient) V2OpenBankWithdrawal(req V2OpenBankWithdrawalRequest) (respo
 func (c *ApiClient) V2BankWithdrawalStatus(withdrawalID int64) (response V2BankWithdrawalStatusResponse, err error) {
 	params := make([][2]string, 0)
 	params = append(params, [2]string{"id", fmt.Sprintf("%d", withdrawalID)})
-
 
 	err = c.authenticatedPostRequest(&response, "/v2/withdrawal/status/", params...)
 	if err != nil {
