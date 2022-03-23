@@ -704,6 +704,23 @@ func (c *ApiClient) V2UserTransactions(currencyPairOrAll string) (response []V2U
 	return
 }
 
+// POST https://www.bitstamp.net/api/v2/crypto-transactions/
+func (c *ApiClient) V2CryptoTransactions(response []V2CryptoTransactionsResponse, err error) {
+	err = c.authenticatedPostRequest(&response, "v2/crypto-transactions/", [2]string{"limit", "1000"})
+	if err != nil {
+		return
+	}
+	return
+}
+
+type V2CryptoTransactionsResponse struct {
+	Currency           string `json:"currency"`
+	DestinationAddress string `json:"destination_address"`
+	TxID               string `json:"tx_id"`
+	Amount             string `json:"amount"`
+	DateTime           string `json:"date_time"`
+}
+
 // Open orders
 type V2OpenOrdersResponse struct {
 	Id           string          `json:"id"`
@@ -771,6 +788,104 @@ func (c *ApiClient) V2CryptoWithdrawals(token, address *string, amount *float64,
 
 type V2CryptoWithdrawalResponse struct {
 	WithdrawalID int64 `json:"withdrawal_id"`
+}
+
+// POST https://www.bitstamp.net/api/v2/{token}_address/
+func (c *ApiClient) V2TokenDepositAddress(token *string) (response V2TokenDepositAddres, err error) {
+
+	err = c.authenticatedPostRequest(&response, fmt.Sprintf("v2/%s_address/", *token))
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+type V2TokenDepositAddres struct {
+	Address string `json:"address"`
+}
+
+type V2OpenBankWithdrawalRequest struct {
+	Amount          float64 `json:"amount"`
+	AccountCurrency string  `json:"account_currency"`
+	Name            string  `json:"name"`
+	Iban            string  `json:"iban"`
+	Bic             string  `json:"bic"`
+	Address         string  `json:"address"`
+	PostalCode      string  `json:"postal_code"`
+	City            string  `json:"city"`
+	Country         string  `json:"country"`
+	Type            string  `json:"type"`
+	BankName        string  `json:"bank_name"`
+	BankAddress     string  `json:"bank_address"`
+	BankPostalCode  string  `json:"bank_postal_code"`
+	BankCity        string  `json:"bank_city"`
+	BankCountry     string  `json:"bank_country"`
+	Currency        string  `json:"currency"`
+}
+
+type V2OpenBankWithdrawalResponse struct {
+	Id     int64  `json:"id"`
+	Status string `json:"status"`
+	Reason string `json:"reason"`
+}
+
+// POST https://www.bitstamp.net/api/v2/withdrawal/open/
+func (c *ApiClient) V2OpenBankWithdrawal(req V2OpenBankWithdrawalRequest) (response V2OpenBankWithdrawalResponse, err error) {
+	params := make([][2]string, 0)
+	params = append(params, [2]string{"amount", fmt.Sprintf("%d", req.Amount)})
+	params = append(params, [2]string{"account_currency", req.AccountCurrency})
+	params = append(params, [2]string{"name", req.Name})
+	params = append(params, [2]string{"iban", req.Iban})
+	params = append(params, [2]string{"bic", req.Bic})
+	params = append(params, [2]string{"address", req.Address})
+	params = append(params, [2]string{"postal_code", req.PostalCode})
+	params = append(params, [2]string{"city", req.City})
+	params = append(params, [2]string{"country", req.Country})
+	params = append(params, [2]string{"type", req.Type})
+	if req.Type == "international" {
+		params = append(params, [2]string{"bank_name", req.BankName})
+		params = append(params, [2]string{"bank_address", req.BankAddress})
+		params = append(params, [2]string{"bank_postal_code", req.BankPostalCode})
+		params = append(params, [2]string{"bank_city", req.BankCity})
+		params = append(params, [2]string{"bank_country", req.BankCountry})
+		params = append(params, [2]string{"currency", req.Currency})
+	}
+
+	err = c.authenticatedPostRequest(&response, "/v2/withdrawal/open/", params...)
+	if err != nil {
+		return
+	}
+
+	if response.Status == "error" {
+		err = fmt.Errorf("error: %v", response.Reason)
+	}
+
+	return
+}
+
+//POST https://www.bitstamp.net/api/v2/withdrawal/status/
+func (c *ApiClient) V2BankWithdrawalStatus(withdrawalID int64) (response V2BankWithdrawalStatusResponse, err error) {
+	params := make([][2]string, 0)
+	params = append(params, [2]string{"id", fmt.Sprintf("%d", withdrawalID)})
+
+
+	err = c.authenticatedPostRequest(&response, "/v2/withdrawal/status/", params...)
+	if err != nil {
+		return
+	}
+
+	if response.Status == "error" {
+		err = fmt.Errorf("error: %v", response.Reason)
+	}
+
+	return
+}
+
+type V2BankWithdrawalStatusResponse struct {
+	Id     int64  `json:"id"`
+	Status string `json:"status"`
+	Reason string `json:"reason"`
 }
 
 // POST https://www.bitstamp.net/api/v2/order_status/
