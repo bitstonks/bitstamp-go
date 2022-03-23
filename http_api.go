@@ -7,15 +7,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/shopspring/decimal"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/shopspring/decimal"
 )
 
 type rounding struct {
@@ -716,15 +714,15 @@ func (c *ApiClient) V2CryptoTransactions() (response V2CryptoTransactionsRespons
 
 type V2CryptoTransactionsResponse struct {
 	Deposits    []Transaction `json:"deposits"`
-	Withdrawals []Transaction   `json:"withdrawals"`
+	Withdrawals []Transaction `json:"withdrawals"`
 }
 
 type Transaction struct {
-	Currency           string    `json:"currency"`
-	DestinationAddress string    `json:"destinationAddress"`
-	TxID               string    `json:"txid"`
-	Amount             float64   `json:"amount"`
-	DateTime           time.Time `json:"datetime"`
+	Currency           string  `json:"currency"`
+	DestinationAddress string  `json:"destinationAddress"`
+	TxID               string  `json:"txid"`
+	Amount             float64 `json:"amount"`
+	DateTime           int64   `json:"datetime"`
 }
 
 // Open orders
