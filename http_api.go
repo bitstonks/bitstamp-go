@@ -770,19 +770,19 @@ type V2OrderStatusResponse struct {
 }
 
 // POST https://www.bitstamp.net/api/{token}_withdrawal
-func (c *ApiClient) V2CryptoWithdrawals(token, address *string, amount *float64,
+func (c *ApiClient) V2CryptoWithdrawals(token, address string, amount float64,
 	memoID, destinationTag string) (response V2CryptoWithdrawalResponse, err error) {
 	params := make([][2]string, 0)
 	params = append(params, [2]string{"amount", fmt.Sprintf("%d", amount)})
-	params = append(params, [2]string{"address", *address})
+	params = append(params, [2]string{"address", address})
 	if memoID != "" {
-		params = append(params, [2]string{"memo_id", memoID})
+		params = append(params, [2]string{"memoid", memoID})
 	}
 	if destinationTag != "" {
-		params = append(params, [2]string{"destination_tag", memoID})
+		params = append(params, [2]string{"destinationTag", destinationTag})
 	}
 
-	err = c.authenticatedPostRequest(&response, fmt.Sprintf("v2/%s_withdrawal/", *token), params...)
+	err = c.authenticatedPostRequest(&response, fmt.Sprintf("v2/%s_withdrawal/", token), params...)
 	if err != nil {
 		return
 	}
