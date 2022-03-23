@@ -787,11 +787,17 @@ func (c *ApiClient) V2CryptoWithdrawals(token, address string, amount float64,
 		return
 	}
 
+	if response.Status == "error" {
+		err = fmt.Errorf("error: %v", response.Reason)
+	}
+
 	return
 }
 
 type V2CryptoWithdrawalResponse struct {
 	WithdrawalID int64 `json:"withdrawal_id"`
+	Status string `json:"status"`
+	Reason string `json:"reason"`
 }
 
 // POST https://www.bitstamp.net/api/v2/{token}_address/
