@@ -13,6 +13,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/shopspring/decimal"
 )
@@ -714,11 +715,16 @@ func (c *ApiClient) V2CryptoTransactions() (response []V2CryptoTransactionsRespo
 }
 
 type V2CryptoTransactionsResponse struct {
-	Currency           string `json:"currency"`
-	DestinationAddress string `json:"destination_address"`
-	TxID               string `json:"tx_id"`
-	Amount             string `json:"amount"`
-	DateTime           string `json:"date_time"`
+	Deposits    []Transaction `json:"deposits"`
+	Withdrawals []Transaction   `json:"withdrawals"`
+}
+
+type Transaction struct {
+	Currency           string    `json:"currency"`
+	DestinationAddress string    `json:"destinationAddress"`
+	TxID               string    `json:"txid"`
+	Amount             float64   `json:"amount"`
+	DateTime           time.Time `json:"datetime"`
 }
 
 // Open orders
