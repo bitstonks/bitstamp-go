@@ -773,7 +773,7 @@ type V2OrderStatusResponse struct {
 func (c *ApiClient) V2CryptoWithdrawals(token, address string, amount float64,
 	memoID, destinationTag string) (response V2CryptoWithdrawalResponse, err error) {
 	params := make([][2]string, 0)
-	params = append(params, [2]string{"amount", fmt.Sprintf("%d", amount)})
+	params = append(params, [2]string{"amount", fmt.Sprintf("%f", amount)})
 	params = append(params, [2]string{"address", address})
 	if memoID != "" {
 		params = append(params, [2]string{"memoid", memoID})
