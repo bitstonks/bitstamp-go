@@ -999,10 +999,9 @@ func (c *ApiClient) V2SellLimitOrder(currencyPair string, price, amount, limitPr
 type V2MarketOrderResponse struct {
 	Id       string          `json:"id"`
 	Datetime string          `json:"datetime"`
-	Type     string          `json:"type"`
-	Price    decimal.Decimal `json:"price"`
-	Amount   decimal.Decimal `json:"amount"`
-	Error    string          `json:"error"`
+	//Type     string          `json:"type"`
+	//Price    decimal.Decimal `json:"price"`
+	//Amount   decimal.Decimal `json:"amount"`
 	Status   string          `json:"status"`
 	Reason   interface{}     `json:"reason"`
 }
