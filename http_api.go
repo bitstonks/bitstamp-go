@@ -999,9 +999,9 @@ func (c *ApiClient) V2SellLimitOrder(currencyPair string, price, amount, limitPr
 type V2MarketOrderResponse struct {
 	Id       string          `json:"id"`
 	Datetime string          `json:"datetime"`
-	//Type     string          `json:"type"`
-	//Price    decimal.Decimal `json:"price"`
-	//Amount   decimal.Decimal `json:"amount"`
+	Type     string          `json:"type"`
+	Price    decimal.Decimal `json:"price"`
+	Amount   decimal.Decimal `json:"amount"`
 	Status   string          `json:"status"`
 	Reason   interface{}     `json:"reason"`
 }
@@ -1013,7 +1013,7 @@ func (c *ApiClient) V2BuyMarketOrder(currencyPair string, amount float64, clOrdI
 		params = append(params, [2]string{"client_order_id", clOrdId})
 	}
 
-	err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/buy/market/%s", currencyPair), params...)
+	err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/buy/market/%s/", currencyPair), params...)
 	if err != nil {
 		return
 	}
