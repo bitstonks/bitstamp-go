@@ -1007,47 +1007,32 @@ type V2MarketOrderResponse struct {
 	Reason   interface{}     `json:"reason"`
 }
 
-func (c *ApiClient) v2MarketOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
-	urlPath := fmt.Sprintf("/v2/%s/market/%s/", side, currencyPair)
-	url_ := urlMerge(c.domain, urlPath)
-
-	data := c.credentials()
-	data.Set("amount", amount.String())
+func (c *ApiClient) v2BuyMarketOrder(side, currencyPair string, amount float64, clOrdId string) (response V2MarketOrderResponse, err error) {
+	params := make([][2]string, 0)
+	params = append(params, [2]string{"amount", fmt.Sprintf("%f", amount)})
 	if clOrdId != "" {
-		data.Set("client_order_id", clOrdId)
+		params = append(params, [2]string{"client_order_id", clOrdId})
 	}
 
-	resp, err := http.PostForm(url_, data)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(respBody, &response)
+	err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/buy/market/%s", currencyPair), params...)
 	if err != nil {
 		return
 	}
 
 	if response.Status == "error" {
-		err = fmt.Errorf("error placing market %s (for %s): %v", side, amount, response.Reason)
-		return
+		err = fmt.Errorf("error: %v", response.Reason)
 	}
 
 	return
 }
 
-func (c *ApiClient) V2BuyMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
-	return c.v2MarketOrder("buy", currencyPair, amount, clOrdId)
-}
-
-func (c *ApiClient) V2SellMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
-	return c.v2MarketOrder("sell", currencyPair, amount, clOrdId)
-}
+//func (c *ApiClient) V2BuyMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
+//	return c.v2MarketOrder("buy", currencyPair, amount, clOrdId)
+//}
+//
+//func (c *ApiClient) V2SellMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
+//	return c.v2MarketOrder("sell", currencyPair, amount, clOrdId)
+//}
 
 type V2InstantOrderResponse struct {
 	Id       string          `json:"id"`
