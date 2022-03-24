@@ -1007,7 +1007,7 @@ type V2MarketOrderResponse struct {
 	Reason   interface{}     `json:"reason"`
 }
 
-func (c *ApiClient) V2BuyMarketOrder(side, currencyPair string, amount float64, clOrdId string) (response V2MarketOrderResponse, err error) {
+func (c *ApiClient) V2BuyMarketOrder(currencyPair string, amount float64, clOrdId string) (response V2MarketOrderResponse, err error) {
 	params := make([][2]string, 0)
 	params = append(params, [2]string{"amount", fmt.Sprintf("%f", amount)})
 	if clOrdId != "" {
