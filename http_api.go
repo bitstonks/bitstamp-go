@@ -1025,6 +1025,25 @@ func (c *ApiClient) V2BuyMarketOrder(currencyPair string, amount float64, clOrdI
 	return
 }
 
+func (c *ApiClient) V2SellMarketOrder(currencyPair string, amount float64, clOrdId string) (response V2MarketOrderResponse, err error) {
+	params := make([][2]string, 0)
+	params = append(params, [2]string{"amount", fmt.Sprintf("%f", amount)})
+	if clOrdId != "" {
+		params = append(params, [2]string{"client_order_id", clOrdId})
+	}
+
+	err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/sell/market/%s/", currencyPair), params...)
+	if err != nil {
+		return
+	}
+
+	if response.Status == "error" {
+		err = fmt.Errorf("error: %v", response.Reason)
+	}
+
+	return
+}
+
 //func (c *ApiClient) V2BuyMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
 //	return c.v2MarketOrder("buy", currencyPair, amount, clOrdId)
 //}
