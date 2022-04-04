@@ -795,9 +795,9 @@ func (c *ApiClient) V2CryptoWithdrawals(token, address string, amount float64,
 }
 
 type V2CryptoWithdrawalResponse struct {
-	WithdrawalID int64 `json:"withdrawal_id"`
-	Status string `json:"status"`
-	Reason interface{} `json:"reason"`
+	WithdrawalID int64       `json:"withdrawal_id"`
+	Status       string      `json:"status"`
+	Reason       interface{} `json:"reason"`
 }
 
 // POST https://www.bitstamp.net/api/v2/{token}_address/
@@ -1006,14 +1006,14 @@ type V2MarketOrderResponse struct {
 	Reason   interface{}     `json:"reason"`
 }
 
-func (c *ApiClient) V2BuyMarketOrder(currencyPair string, amount float64, clOrdId string) (response V2MarketOrderResponse, err error) {
+func (c *ApiClient) V2PlaceMarketOrder(side, currencyPair string, amount float64, clOrdId string) (response V2MarketOrderResponse, err error) {
 	params := make([][2]string, 0)
 	params = append(params, [2]string{"amount", fmt.Sprintf("%f", amount)})
 	if clOrdId != "" {
 		params = append(params, [2]string{"client_order_id", clOrdId})
 	}
 
-	err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/buy/market/%s/", currencyPair), params...)
+	err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/%s/market/%s/", side, currencyPair), params...)
 	if err != nil {
 		return
 	}
@@ -1024,33 +1024,6 @@ func (c *ApiClient) V2BuyMarketOrder(currencyPair string, amount float64, clOrdI
 
 	return
 }
-
-func (c *ApiClient) V2SellMarketOrder(currencyPair string, amount float64, clOrdId string) (response V2MarketOrderResponse, err error) {
-	params := make([][2]string, 0)
-	params = append(params, [2]string{"amount", fmt.Sprintf("%f", amount)})
-	if clOrdId != "" {
-		params = append(params, [2]string{"client_order_id", clOrdId})
-	}
-
-	err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/sell/market/%s/", currencyPair), params...)
-	if err != nil {
-		return
-	}
-
-	if response.Status == "error" {
-		err = fmt.Errorf("error: %v", response.Reason)
-	}
-
-	return
-}
-
-//func (c *ApiClient) V2BuyMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
-//	return c.v2MarketOrder("buy", currencyPair, amount, clOrdId)
-//}
-//
-//func (c *ApiClient) V2SellMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
-//	return c.v2MarketOrder("sell", currencyPair, amount, clOrdId)
-//}
 
 type V2InstantOrderResponse struct {
 	Id       string          `json:"id"`
