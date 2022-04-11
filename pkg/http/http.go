@@ -59,8 +59,7 @@ func (c *HttpClient) credentials() url.Values {
 	return data
 }
 
-// TODO: change the order of method arguments here...
-func (c *HttpClient) getRequest(urlPath string, responseObject interface{}, queryParams ...[2]string) (err error) {
+func (c *HttpClient) getRequest(responseObject interface{}, urlPath string, queryParams ...[2]string) (err error) {
 	url_ := urlMerge(c.domain, urlPath, queryParams...)
 
 	resp, err := http.Get(url_)
