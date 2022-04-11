@@ -1,4 +1,4 @@
-package bitstamp
+package websocket
 
 import (
 	"encoding/json"

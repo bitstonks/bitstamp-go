@@ -1,4 +1,4 @@
-package bitstamp
+package http
 
 import (
 	"net/url"
