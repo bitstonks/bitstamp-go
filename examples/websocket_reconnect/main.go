@@ -2,16 +2,15 @@ package main
 
 import (
 	"fmt"
+	"github.com/bitstonks/bitstamp-go/pkg/websocket"
 	"log"
 	"time"
-
-	"github.com/bitstonks/bitstamp-go"
 )
 
 // Following app is an example of handling reconnect request from Websocket server. Note, that
 // this shows the semantics but
 type App struct {
-	client           *bitstamp.WsClient
+	client           *websocket.WsClient
 	requestNewClient chan struct{}
 	close            chan struct{}
 }
@@ -19,7 +18,7 @@ type App struct {
 // A very simple example of handling reconnect event. Every reconnect event is handled in such a way, that can
 // ensure no data loss.
 func NewApp() App {
-	c, err := bitstamp.NewWsClient()
+	c, err := websocket.NewWsClient()
 	if err != nil {
 		log.Panicf("error initializing client %v", err)
 	}

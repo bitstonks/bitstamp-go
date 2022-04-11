@@ -2,14 +2,13 @@ package main
 
 import (
 	"fmt"
+	"github.com/bitstonks/bitstamp-go/pkg/websocket"
 	"log"
 	"time"
-
-	"github.com/bitstonks/bitstamp-go"
 )
 
 func main() {
-	c, err := bitstamp.NewWsClient()
+	c, err := websocket.NewWsClient()
 	if err != nil {
 		log.Panicf("error initializing client %v", err)
 	}

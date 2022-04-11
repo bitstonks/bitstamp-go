@@ -2,14 +2,13 @@ package main
 
 import (
 	"fmt"
+	"github.com/bitstonks/bitstamp-go/pkg/http"
 	"log"
-
-	"github.com/bitstonks/bitstamp-go"
 )
 
 func main() {
-	api := bitstamp.NewApiClient(
-		bitstamp.Credentials("1", "ApiKey1", "api_key_secret"),
+	api := http.NewHttpClient(
+		http.Credentials("1", "ApiKey1", "api_key_secret"),
 	)
 
 	ticker, err := api.V1Ticker()
