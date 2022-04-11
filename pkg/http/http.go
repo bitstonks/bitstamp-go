@@ -32,19 +32,19 @@ func urlMerge(baseUrl url.URL, urlPath string, queryParams ...[2]string) string 
 	return baseUrl.String()
 }
 
-type ApiClient struct {
-	*apiClientConfig
+type HttpClient struct {
+	*httpClientConfig
 }
 
-func NewApiClient(options ...ApiOption) *ApiClient {
-	config := defaultApiClientConfig()
+func NewHttpClient(options ...HttpOption) *HttpClient {
+	config := defaultHttpClientConfig()
 	for _, option := range options {
 		option(config)
 	}
-	return &ApiClient{config}
+	return &HttpClient{config}
 }
 
-func (c *ApiClient) credentials() url.Values {
+func (c *HttpClient) credentials() url.Values {
 	nonce := c.nonceGenerator()
 	message := nonce + c.username + c.apiKey
 
@@ -60,7 +60,7 @@ func (c *ApiClient) credentials() url.Values {
 }
 
 // TODO: change the order of method arguments here...
-func (c *ApiClient) getRequest(urlPath string, responseObject interface{}, queryParams ...[2]string) (err error) {
+func (c *HttpClient) getRequest(urlPath string, responseObject interface{}, queryParams ...[2]string) (err error) {
 	url_ := urlMerge(c.domain, urlPath, queryParams...)
 
 	resp, err := http.Get(url_)
@@ -78,7 +78,7 @@ func (c *ApiClient) getRequest(urlPath string, responseObject interface{}, query
 	return
 }
 
-func (c *ApiClient) authenticatedPostRequest(responseObject interface{}, urlPath string, queryParams ...[2]string) (err error) {
+func (c *HttpClient) authenticatedPostRequest(responseObject interface{}, urlPath string, queryParams ...[2]string) (err error) {
 	authVersion := "v2"
 	method := "POST"
 	xAuth := "BITSTAMP " + c.apiKey

@@ -244,7 +244,7 @@ type V2BalanceResponse struct {
 
 // POST https://www.bitstamp.net/api/v2/balance/
 // POST https://www.bitstamp.net/api/v2/balance/{currency_pair}/
-func (c *ApiClient) V2Balance(currencyPairOrAll string) (response V2BalanceResponse, err error) {
+func (c *HttpClient) V2Balance(currencyPairOrAll string) (response V2BalanceResponse, err error) {
 	// TODO: validate currency pair
 	if currencyPairOrAll == "all" {
 		err = c.authenticatedPostRequest(&response, "/v2/balance/")
@@ -303,7 +303,7 @@ type V2UserTransactionsResponse struct {
 }
 
 // TODO: add arguments!
-func (c *ApiClient) V2UserTransactions(currencyPairOrAll string) (response []V2UserTransactionsResponse, err error) {
+func (c *HttpClient) V2UserTransactions(currencyPairOrAll string) (response []V2UserTransactionsResponse, err error) {
 	if currencyPairOrAll == "all" {
 		err = c.authenticatedPostRequest(&response, "/v2/user_transactions/", [2]string{"limit", "1000"})
 	} else {
@@ -327,7 +327,7 @@ type V2OpenOrdersResponse struct {
 
 // POST https://www.bitstamp.net/api/v2/open_orders/all/
 // POST https://www.bitstamp.net/api/v2/open_orders/{currency_pair}
-func (c *ApiClient) V2OpenOrders(currencyPairOrAll string) (response []V2OpenOrdersResponse, err error) {
+func (c *HttpClient) V2OpenOrders(currencyPairOrAll string) (response []V2OpenOrdersResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/open_orders/%s/", currencyPairOrAll)
 	err = c.authenticatedPostRequest(&response, urlPath)
 
@@ -359,7 +359,7 @@ type V2OrderStatusResponse struct {
 }
 
 // POST https://www.bitstamp.net/api/v2/order_status/
-func (c *ApiClient) V2OrderStatus(orderId int64, clOrdId string, omitTx bool) (response V2OrderStatusResponse, err error) {
+func (c *HttpClient) V2OrderStatus(orderId int64, clOrdId string, omitTx bool) (response V2OrderStatusResponse, err error) {
 	params := make([][2]string, 0)
 	params = append(params, [2]string{"id", fmt.Sprintf("%d", orderId)})
 	if clOrdId != "" {
@@ -393,7 +393,7 @@ type V2CancelOrderResponse struct {
 	Error  string          `json:"error"`
 }
 
-func (c *ApiClient) V2CancelOrder(orderId int64) (response V2CancelOrderResponse, err error) {
+func (c *HttpClient) V2CancelOrder(orderId int64) (response V2CancelOrderResponse, err error) {
 	err = c.authenticatedPostRequest(&response, "/v2/cancel_order/", [2]string{"id", fmt.Sprintf("%d", orderId)})
 	return
 }
@@ -414,7 +414,7 @@ type V2LimitOrderResponse struct {
 	Reason   interface{}     `json:"reason"`
 }
 
-func (c *ApiClient) v2LimitOrder(side, currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
+func (c *HttpClient) v2LimitOrder(side, currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/%s/%s/", side, currencyPair)
 
 	if c.autoRounding {
@@ -449,11 +449,11 @@ func (c *ApiClient) v2LimitOrder(side, currencyPair string, price, amount, limit
 	return
 }
 
-func (c *ApiClient) V2BuyLimitOrder(currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
+func (c *HttpClient) V2BuyLimitOrder(currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
 	return c.v2LimitOrder("buy", currencyPair, price, amount, limitPrice, dailyOrder, iocOrder, clOrdId)
 }
 
-func (c *ApiClient) V2SellLimitOrder(currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
+func (c *HttpClient) V2SellLimitOrder(currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
 	return c.v2LimitOrder("sell", currencyPair, price, amount, limitPrice, dailyOrder, iocOrder, clOrdId)
 }
 
@@ -468,7 +468,7 @@ type V2MarketOrderResponse struct {
 	Reason   interface{}     `json:"reason"`
 }
 
-func (c *ApiClient) v2MarketOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
+func (c *HttpClient) v2MarketOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/%s/market/%s/", side, currencyPair)
 	url_ := urlMerge(c.domain, urlPath)
 
@@ -502,11 +502,11 @@ func (c *ApiClient) v2MarketOrder(side, currencyPair string, amount decimal.Deci
 	return
 }
 
-func (c *ApiClient) V2BuyMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
+func (c *HttpClient) V2BuyMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
 	return c.v2MarketOrder("buy", currencyPair, amount, clOrdId)
 }
 
-func (c *ApiClient) V2SellMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
+func (c *HttpClient) V2SellMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
 	return c.v2MarketOrder("sell", currencyPair, amount, clOrdId)
 }
 
@@ -521,7 +521,7 @@ type V2InstantOrderResponse struct {
 	Reason   interface{}     `json:"reason"`
 }
 
-func (c *ApiClient) v2InstantOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
+func (c *HttpClient) v2InstantOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/%s/instant/%s/", side, currencyPair)
 	url_ := urlMerge(c.domain, urlPath)
 
@@ -555,10 +555,10 @@ func (c *ApiClient) v2InstantOrder(side, currencyPair string, amount decimal.Dec
 	return
 }
 
-func (c *ApiClient) V2BuyInstantOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
+func (c *HttpClient) V2BuyInstantOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
 	return c.v2InstantOrder("buy", currencyPair, amount, clOrdId)
 }
 
-func (c *ApiClient) V2SellInstantOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
+func (c *HttpClient) V2SellInstantOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
 	return c.v2InstantOrder("sell", currencyPair, amount, clOrdId)
 }

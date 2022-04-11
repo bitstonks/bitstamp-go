@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 )
 
-const bitstampApiUrl = "https://www.bitstamp.net/api"
+const bitstampHttpApiUrl = "https://www.bitstamp.net/api"
 
-type apiClientConfig struct {
+type httpClientConfig struct {
 	domain             url.URL
 	username           string
 	apiKey             string
@@ -23,56 +23,56 @@ type apiClientConfig struct {
 	autoRounding bool
 }
 
-func defaultApiClientConfig() *apiClientConfig {
-	domain, err := url.Parse(bitstampApiUrl)
+func defaultHttpClientConfig() *httpClientConfig {
+	domain, err := url.Parse(bitstampHttpApiUrl)
 	if err != nil {
-		log.Panicf("error parsing domain %s: %v", bitstampApiUrl, err)
+		log.Panicf("error parsing domain %s: %v", bitstampHttpApiUrl, err)
 	}
-	return &apiClientConfig{
+	return &httpClientConfig{
 		domain:             *domain,
 		nonceGenerator:     defaultNonce,
 		timestampGenerator: timestamp,
 	}
 }
 
-type ApiOption func(*apiClientConfig)
+type HttpOption func(*httpClientConfig)
 
-func UrlDomain(rawDomain string) ApiOption {
+func UrlDomain(rawDomain string) HttpOption {
 	domain, err := url.Parse(rawDomain)
 	if err != nil {
 		log.Panicf("error parsing domain %s: %v", rawDomain, err)
 	}
-	return func(config *apiClientConfig) {
+	return func(config *httpClientConfig) {
 		config.domain = *domain
 	}
 }
 
-func Credentials(customerId string, apiKey string, apiSecret string) ApiOption {
-	return func(config *apiClientConfig) {
+func Credentials(customerId string, apiKey string, apiSecret string) HttpOption {
+	return func(config *httpClientConfig) {
 		config.username = customerId
 		config.apiKey = apiKey
 		config.apiSecret = apiSecret
 	}
 }
 
-func NonceGenerator(nonceGen func() string) ApiOption {
-	return func(config *apiClientConfig) {
+func NonceGenerator(nonceGen func() string) HttpOption {
+	return func(config *httpClientConfig) {
 		config.nonceGenerator = nonceGen
 	}
 }
 
-func AutoRoundingEnabled() ApiOption {
-	return func(config *apiClientConfig) {
+func AutoRoundingEnabled() HttpOption {
+	return func(config *httpClientConfig) {
 		config.autoRounding = true
 	}
 }
 
-// 10x slower the than previous `fmt.Sprintf("%d", time.Now().UnixNano())`, should i worry?
+// 10x slower the than previous `fmt.Sprintf("%d", time.Now().UnixNano())`, should I worry?
 func defaultNonce() string {
 	return uuid.NewString()
 }
 
-// not having an ApiOption for this by design, the timestamp is prescribed by API specification
+// not having an HttpOption for this by design, the timestamp is prescribed by API specification
 func timestamp() string {
 	return fmt.Sprintf("%d", time.Now().UTC().UnixNano()/1000000)
 }

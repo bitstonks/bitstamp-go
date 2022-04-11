@@ -26,26 +26,26 @@ type TickerResponse struct {
 }
 
 // GET https://www.bitstamp.net/api/ticker/
-func (c *ApiClient) V1Ticker() (response TickerResponse, err error) {
+func (c *HttpClient) V1Ticker() (response TickerResponse, err error) {
 	err = c.getRequest("/ticker/", &response)
 	return
 }
 
 // GET https://www.bitstamp.net/api/ticker_hour/
-func (c *ApiClient) V1HourlyTicker() (response TickerResponse, err error) {
+func (c *HttpClient) V1HourlyTicker() (response TickerResponse, err error) {
 	err = c.getRequest("/ticker_hour/", &response)
 	return
 }
 
 // GET https://www.bitstamp.net/api/v2/ticker/{currency_pair}/
-func (c *ApiClient) V2Ticker(currencyPair string) (response TickerResponse, err error) {
+func (c *HttpClient) V2Ticker(currencyPair string) (response TickerResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/ticker/%s/", currencyPair)
 	err = c.getRequest(urlPath, &response)
 	return
 }
 
 // GET https://www.bitstamp.net/api/v2/ticker_hour/{currency_pair}/
-func (c *ApiClient) V2HourlyTicker(currencyPair string) (response TickerResponse, err error) {
+func (c *HttpClient) V2HourlyTicker(currencyPair string) (response TickerResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/ticker_hour/%s/", currencyPair)
 	err = c.getRequest(urlPath, &response)
 	return
@@ -108,7 +108,7 @@ type V1OrderBookResponse struct {
 }
 
 // GET https://www.bitstamp.net/api/order_book?group=1
-func (c *ApiClient) V1OrderBook(group int) (response V1OrderBookResponse, err error) {
+func (c *HttpClient) V1OrderBook(group int) (response V1OrderBookResponse, err error) {
 	err = c.getRequest("/order_book/", &response, [2]string{"group", strconv.Itoa(group)})
 	return
 }
@@ -124,7 +124,7 @@ type V2OrderBookResponse struct {
 // - 1 (orders are grouped at same price - default)
 // - 2 (orders with their order ids are not grouped at same price)
 // GET https://www.bitstamp.net/api/order_book?group=1
-func (c *ApiClient) V2OrderBook(currencyPair string, group int) (response V2OrderBookResponse, err error) {
+func (c *HttpClient) V2OrderBook(currencyPair string, group int) (response V2OrderBookResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/order_book/%s/", currencyPair)
 	err = c.getRequest(urlPath, &response, [2]string{"group", strconv.Itoa(group)})
 	return

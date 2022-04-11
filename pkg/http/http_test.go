@@ -10,7 +10,7 @@ import (
 )
 
 func TestUrlMerge(t *testing.T) {
-	bitstampUrl, _ := url.Parse(bitstampApiUrl)
+	bitstampUrl, _ := url.Parse(bitstampHttpApiUrl)
 	contrivedUrl, _ := url.Parse("http://127.0.0.1:9876")
 	cases := []struct {
 		urlBase        url.URL
