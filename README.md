@@ -9,7 +9,7 @@ of Pusher (which is not available anymore).
 
 ## Requirements
 
-* Go 1.17+
+* Go 1.18+
 * Dependencies in `go.mod`
 
 ## Usage examples

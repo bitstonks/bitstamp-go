@@ -1,10 +1,10 @@
 module github.com/bitstonks/bitstamp-go
 
-go 1.17
+go 1.18
 
 require (
-	github.com/google/uuid v1.2.0
-	github.com/gorilla/websocket v1.4.2
+	github.com/google/uuid v1.3.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/shopspring/decimal v1.3.1
 	github.com/stretchr/testify v1.7.0
 )
