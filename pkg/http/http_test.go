@@ -35,7 +35,7 @@ func TestUrlMerge(t *testing.T) {
 }
 
 func TestApiClient_V2Ticker(t *testing.T) {
-	c := NewApiClient()
+	c := NewHttpClient()
 	resp, err := c.V2Ticker("btcusd")
 
 	assert.NoError(t, err)
