@@ -14,6 +14,7 @@ import (
 	"strings"
 )
 
+// A helper function, custom URL merging logic adapted for the API.
 func urlMerge(baseUrl url.URL, urlPath string, queryParams ...[2]string) string {
 	baseUrl.Path = path.Join(baseUrl.Path, urlPath)
 
@@ -32,6 +33,27 @@ func urlMerge(baseUrl url.URL, urlPath string, queryParams ...[2]string) string 
 	return baseUrl.String()
 }
 
+func validateCurrencyPair(currencyPair string) error {
+	if _, exists := roundings[currencyPair]; exists {
+		return nil
+	} else {
+		return fmt.Errorf("unknown currency pair: %s", currencyPair)
+	}
+}
+
+// GetRequestError is a custom error type that makes for somewhat nicer logic with non-200 codes returned.
+type GetRequestError struct {
+	Code    int
+	Content string
+	Status  string
+	Url     string
+}
+
+func (e *GetRequestError) Error() string {
+	return fmt.Sprintf("%s (%s)", e.Status, e.Url)
+}
+
+// HttpClient implements the HTTP (REST) API endpoints.
 type HttpClient struct {
 	*httpClientConfig
 }
@@ -71,6 +93,15 @@ func (c *HttpClient) getRequest(responseObject interface{}, urlPath string, quer
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return &GetRequestError{
+			Code:    resp.StatusCode,
+			Content: string(respBody),
+			Status:  resp.Status,
+			Url:     url_,
+		}
 	}
 
 	err = json.Unmarshal(respBody, responseObject)

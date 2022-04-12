@@ -8,36 +8,50 @@ import (
 
 func main() {
 	api := http.NewHttpClient(
-		http.Credentials("1", "ApiKey1", "api_key_secret"),
+		http.Credentials("1", "invalid", "invalid"),
 	)
 
-	ticker, err := api.V1Ticker()
+	// public endpoints
+	ticker1, err := api.V2Ticker("btcusd")
 	if err != nil {
 		log.Panic(err)
 	}
-	fmt.Printf("%+v\n", ticker)
+	fmt.Printf("TICKER: %+v\n", ticker1)
 
-	ticker, err = api.V2Ticker("btcusd")
+	ticker2, err := api.V2HourlyTicker("btcusd")
 	if err != nil {
 		log.Panic(err)
 	}
-	fmt.Printf("%+v\n", ticker)
+	fmt.Printf("HOURLY TICKER: %+v\n", ticker2)
 
-	ticker, err = api.V1HourlyTicker()
+	ob, err := api.V2OrderBook("btcusd", 2)
 	if err != nil {
 		log.Panic(err)
 	}
-	fmt.Printf("%+v\n", ticker)
+	fmt.Printf("ORDER BOOK - HIGHEST BID: %+v\n", ob.Bids[0])
+	fmt.Printf("ORDER BOOK - LOWEST ASK: %+v\n", ob.Asks[0])
 
-	ticker, err = api.V2HourlyTicker("btcusd")
+	txs, err := api.V2Transactions("btcusd", "hour")
 	if err != nil {
 		log.Panic(err)
 	}
-	fmt.Printf("%+v\n", ticker)
+	fmt.Printf("TRANSACTIONS: %+v\n", txs[0])
 
-	ob, err := api.V2OrderBook("eurusd", 2)
+	info, err := api.V2TradingPairsInfo()
 	if err != nil {
 		log.Panic(err)
 	}
-	fmt.Printf("%+v\n", ob)
+	fmt.Printf("TRADING PAIRS: %+v\n", info[0])
+
+	ohlc, err := api.V2Ohlc("btcusd", 60, 2, 0, 0)
+	if err != nil {
+		log.Panic(err)
+	}
+	fmt.Printf("CANDLES: %+v\n", ohlc.Data.Candles)
+
+	eurusd, err := api.V2EurUsd()
+	if err != nil {
+		log.Panic(err)
+	}
+	fmt.Printf("EURUSD: %+v\n", eurusd)
 }
