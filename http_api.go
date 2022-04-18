@@ -704,8 +704,8 @@ func (c *ApiClient) V2UserTransactions(currencyPairOrAll string) (response []V2U
 }
 
 // POST https://www.bitstamp.net/api/v2/crypto-transactions/
-func (c *ApiClient) V2CryptoTransactions() (response V2CryptoTransactionsResponse, err error) {
-	err = c.authenticatedPostRequest(&response, "v2/crypto-transactions/", [2]string{"limit", "1000"})
+func (c *ApiClient) V2CryptoTransactions(limit string) (response V2CryptoTransactionsResponse, err error) {
+	err = c.authenticatedPostRequest(&response, "v2/crypto-transactions/", [2]string{"limit", limit})
 	if err != nil {
 		return
 	}
