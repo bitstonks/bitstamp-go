@@ -3,9 +3,10 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/shopspring/decimal"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/shopspring/decimal"
 )
 
 // Contains "private" endpoints whereby we are following the naming here: https://www.bitstamp.net/api/
@@ -561,4 +562,20 @@ func (c *HttpClient) V2BuyInstantOrder(currencyPair string, amount decimal.Decim
 
 func (c *HttpClient) V2SellInstantOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
 	return c.v2InstantOrder("sell", currencyPair, amount, clOrdId)
+}
+
+type V2WebsocketsTokenResponse struct {
+	Token    string `json:"token"`
+	ValidSec uint32 `json:"valid_sec"`
+	UserId   uint32 `json:"user_id"`
+}
+
+// V2WebsocketsToken generates an ephemeral token, which allows user to subscribe to private
+// websocket events. These events include ClientOrderIds (and potentially additional private data)
+func (c *HttpClient) V2WebsocketsToken() (response V2WebsocketsTokenResponse, err error) {
+	err = c.authenticatedPostRequest(&response, "/v2/websockets_token/")
+	if err != nil {
+		return
+	}
+	return
 }
