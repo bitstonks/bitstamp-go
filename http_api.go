@@ -775,12 +775,7 @@ func (c *ApiClient) V2CryptoWithdrawals(token, address string, amount float64,
 	params := make([][2]string, 0)
 	params = append(params, [2]string{"amount", fmt.Sprintf("%f", amount)})
 	params = append(params, [2]string{"address", address})
-	if memoID != "" {
-		params = append(params, [2]string{"memoid", memoID})
-	}
-	if destinationTag != "" {
-		params = append(params, [2]string{"destination_tag", destinationTag})
-	}
+	params = append(params, [2]string{"destination_tag", destinationTag})
 
 	err = c.authenticatedPostRequest(&response, fmt.Sprintf("v2/%s_withdrawal/", token), params...)
 	if err != nil {
