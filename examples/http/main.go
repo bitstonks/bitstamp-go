@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/bitstonks/bitstamp-go/pkg/http"
 	"log"
+
+	"github.com/Roky994/bitstamp-go/pkg/http"
 )
 
 func main() {

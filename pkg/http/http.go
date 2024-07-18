@@ -108,7 +108,7 @@ func (c *HttpClient) getRequest(responseObject interface{}, urlPath string, quer
 	return
 }
 
-func (c *HttpClient) authenticatedPostRequest(responseObject interface{}, urlPath string, queryParams ...[2]string) (err error) {
+func (c *HttpClient) authenticatedPostRequest(responseObject interface{}, urlPath string, queryParams map[string]string) (err error) {
 	authVersion := "v2"
 	method := "POST"
 	xAuth := "BITSTAMP " + c.apiKey
@@ -121,8 +121,8 @@ func (c *HttpClient) authenticatedPostRequest(responseObject interface{}, urlPat
 	var payloadString string
 	if queryParams != nil {
 		urlParams := url.Values{}
-		for _, p := range queryParams {
-			urlParams.Set(p[0], p[1]) // TODO: or is it .Add() here? any array arguments in the documentation?
+		for paramName, paramVal := range queryParams {
+			urlParams.Add(paramName, paramVal)
 		}
 		payloadString = urlParams.Encode()
 	}

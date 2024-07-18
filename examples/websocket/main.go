@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/bitstonks/bitstamp-go/pkg/websocket"
 	"log"
 	"time"
+
+	"github.com/Roky994/bitstamp-go/pkg/websocket"
 )
 
 func main() {
