@@ -11,9 +11,7 @@ import (
 
 // Contains "private" endpoints whereby we are following the naming here: https://www.bitstamp.net/api/
 
-//
-// Account balance
-//
+// Balance
 
 type V2BalanceResponse struct {
 	// currencies
@@ -248,11 +246,26 @@ type V2BalanceResponse struct {
 func (c *HttpClient) V2Balance(currencyPairOrAll string) (response V2BalanceResponse, err error) {
 	// TODO: validate currency pair
 	if currencyPairOrAll == "all" {
-		err = c.authenticatedPostRequest(&response, "/v2/balance/")
+		err = c.authenticatedPostRequest(&response, "/v2/balance/", nil)
 	} else {
-		err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/balance/%s/", currencyPairOrAll))
+		err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/balance/%s/", currencyPairOrAll), nil)
 	}
 
+	return
+}
+
+// Account Balances
+
+type V2AccountBalancesResponse struct {
+	Currency  string          `json:"currency"`
+	Available decimal.Decimal `json:"available"`
+	Reserved  decimal.Decimal `json:"reserved"`
+	Total     decimal.Decimal `json:"total"`
+}
+
+// POST https://www.bitstamp.net/api/v2/account_balances/
+func (c *HttpClient) V2AccountBalances() (response []V2AccountBalancesResponse, err error) {
+	err = c.authenticatedPostRequest(&response, "/v2/account_balances/", nil)
 	return
 }
 
@@ -306,11 +319,120 @@ type V2UserTransactionsResponse struct {
 // TODO: add arguments!
 func (c *HttpClient) V2UserTransactions(currencyPairOrAll string) (response []V2UserTransactionsResponse, err error) {
 	if currencyPairOrAll == "all" {
-		err = c.authenticatedPostRequest(&response, "/v2/user_transactions/", [2]string{"limit", "1000"})
+		err = c.authenticatedPostRequest(&response, "/v2/user_transactions/", map[string]string{"limit": "1000"})
 	} else {
-		err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/user_transactions/%s/", currencyPairOrAll), [2]string{"limit", "1000"})
+		err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/user_transactions/%s/", currencyPairOrAll), map[string]string{"limit": "1000"})
 	}
 
+	return
+}
+
+// Crypto Transactions
+
+type V2CryptoTransactionDepositWithdrawal struct {
+	Datetime           string          `json:"datetime"`
+	Txid               string          `json:"txid"`
+	DesitnationAddress string          `json:"desitnationAddress"`
+	Amount             decimal.Decimal `json:"amount"`
+	Network            string          `json:"network"`
+	Currency           string          `json:"currency"`
+}
+
+type V2CryptoTransactionIou struct {
+	Datetime           string          `json:"datetime"`
+	Txid               string          `json:"txid"`
+	DesitnationAddress string          `json:"desitnationAddress"`
+	Amount             decimal.Decimal `json:"amount"`
+	Network            string          `json:"network"`
+	Currency           string          `json:"currency"`
+	Type               string          `json:"type"`
+}
+
+type V2CryptoTransactionsResponse struct {
+	Deposits              []V2CryptoTransactionDepositWithdrawal `json:"deposits"`
+	Withdrawals           []V2CryptoTransactionDepositWithdrawal `json:"withdrawals"`
+	RippleIouTransactions []V2CryptoTransactionIou               `json:"ripple_iou_transactions"`
+	Status                string                                 `json:"status"`
+	Reason                interface{}                            `json:"reason"`
+}
+
+func (c *HttpClient) V2CryptoTransactions(includeIous bool) (response V2CryptoTransactionsResponse, err error) {
+	params := map[string]string{"limit": "1000"}
+	if includeIous {
+		params["include_ious"] = ""
+	}
+
+	err = c.authenticatedPostRequest(&response, "/v2/crypto-transactions/", params)
+	return
+}
+
+// Crypto Address
+
+type V2CryptoAddressResponse struct {
+	Address string `json:"address"`
+	Error   string `json:"error"`
+}
+
+func (c *HttpClient) V2CryptoAddress(currency string) (response V2CryptoAddressResponse, err error) {
+	urlPath := fmt.Sprintf("/v2/%s_address/", currency)
+	err = c.authenticatedPostRequest(&response, urlPath, nil)
+	return
+}
+
+// Withdrawal Requests
+
+type V2WithdrawalRequestsResponse struct {
+	Id       string          `json:"id"`
+	Datetime string          `json:"datetime"`
+	Type     string          `json:"type"`
+	Currency string          `json:"currency"`
+	Amount   decimal.Decimal `json:"amount"`
+	Status   string          `json:"status"`
+	Txid     string          `json:"txid"`
+	Reason   interface{}     `json:"reason"`
+}
+
+func (c *HttpClient) V2WithdrawalRequests(withdrawalId int64, timeDelta string) (response []V2WithdrawalRequestsResponse, err error) {
+	params := map[string]string{"offset": "0", "limit": "1000"}
+	if withdrawalId != 0 {
+		params["id"] = fmt.Sprintf("%d", withdrawalId)
+	}
+	if timeDelta != "" {
+		params["timedelta"] = ""
+	}
+
+	err = c.authenticatedPostRequest(&response, "/v2/withdrawal-requests/", params)
+	return
+}
+
+// Withdrawal Fees
+
+type V2WithdrawalFeesResponse struct {
+	Currency string          `json:"currency"`
+	Fee      decimal.Decimal `json:"amount"`
+	Network  string          `json:"status"`
+}
+
+func (c *HttpClient) V2WithdrawalFees() (response []V2WithdrawalFeesResponse, err error) {
+	err = c.authenticatedPostRequest(&response, "/v2/fees/withdrawal/", nil)
+	return
+}
+
+// Trading Fees
+
+type V2TradingFees struct {
+	Maker decimal.Decimal `json:"maker"`
+	Taker decimal.Decimal `json:"taker"`
+}
+
+type V2TradingFeesResponse struct {
+	CurrencyPair string        `json:"currency_pair"`
+	Market       string        `json:"market"`
+	Fees         V2TradingFees `json:"fees"`
+}
+
+func (c *HttpClient) V2TradingFees() (response []V2TradingFeesResponse, err error) {
+	err = c.authenticatedPostRequest(&response, "/v2/fees/trading/", nil)
 	return
 }
 
@@ -330,7 +452,7 @@ type V2OpenOrdersResponse struct {
 // POST https://www.bitstamp.net/api/v2/open_orders/{currency_pair}
 func (c *HttpClient) V2OpenOrders(currencyPairOrAll string) (response []V2OpenOrdersResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/open_orders/%s/", currencyPairOrAll)
-	err = c.authenticatedPostRequest(&response, urlPath)
+	err = c.authenticatedPostRequest(&response, urlPath, nil)
 
 	return
 }
@@ -361,16 +483,17 @@ type V2OrderStatusResponse struct {
 
 // POST https://www.bitstamp.net/api/v2/order_status/
 func (c *HttpClient) V2OrderStatus(orderId int64, clOrdId string, omitTx bool) (response V2OrderStatusResponse, err error) {
-	params := make([][2]string, 0)
-	params = append(params, [2]string{"id", fmt.Sprintf("%d", orderId)})
+	params := map[string]string{
+		"id": fmt.Sprintf("%d", orderId),
+	}
 	if clOrdId != "" {
-		params = append(params, [2]string{"client_order_id", clOrdId})
+		params["client_order_id"] = clOrdId
 	}
 	if omitTx {
-		params = append(params, [2]string{"omit_transactions", "true"})
+		params["omit_transactions"] = "true"
 	}
 
-	err = c.authenticatedPostRequest(&response, "/v2/order_status/", params...)
+	err = c.authenticatedPostRequest(&response, "/v2/order_status/", params)
 	if err != nil {
 		return
 	}
@@ -395,7 +518,7 @@ type V2CancelOrderResponse struct {
 }
 
 func (c *HttpClient) V2CancelOrder(orderId int64) (response V2CancelOrderResponse, err error) {
-	err = c.authenticatedPostRequest(&response, "/v2/cancel_order/", [2]string{"id", fmt.Sprintf("%d", orderId)})
+	err = c.authenticatedPostRequest(&response, "/v2/cancel_order/", map[string]string{"id": fmt.Sprintf("%d", orderId)})
 	return
 }
 
@@ -403,8 +526,8 @@ func (c *HttpClient) V2CancelOrder(orderId int64) (response V2CancelOrderRespons
 // Buy limit order
 // Sell limit order
 
-//{"status": "error", "reason": {"__all__": ["Price is more than 20% below market price."]}}
-//{"status": "error", "reason": {"__all__": ["You need 158338.86 USD to open that order. You have only 99991.52 USD available. Check your account balance for details."]}}
+// {"status": "error", "reason": {"__all__": ["Price is more than 20% below market price."]}}
+// {"status": "error", "reason": {"__all__": ["You need 158338.86 USD to open that order. You have only 99991.52 USD available. Check your account balance for details."]}}
 type V2LimitOrderResponse struct {
 	Id       string          `json:"id"`
 	Datetime string          `json:"datetime"`
@@ -424,21 +547,23 @@ func (c *HttpClient) v2LimitOrder(side, currencyPair string, price, amount, limi
 		price = price.Round(roundings[currencyPair].Counter)
 	}
 
-	params := make([][2]string, 0)
-	params = append(params, [2]string{"amount", amount.String()})
-	params = append(params, [2]string{"price", price.String()})
+	params := map[string]string{
+		"amount": amount.String(),
+		"price":  price.String(),
+	}
+
 	if dailyOrder {
-		params = append(params, [2]string{"daily_order", "True"})
+		params["daily_order"] = "True"
 	}
 	if iocOrder {
-		params = append(params, [2]string{"ioc_order", "True"})
+		params["ioc_order"] = "True"
 	}
 	if clOrdId != "" {
-		params = append(params, [2]string{"client_order_id", clOrdId})
+		params["client_order_id"] = clOrdId
 	}
 	// TODO: limitPrice !
 
-	err = c.authenticatedPostRequest(&response, urlPath, params...)
+	err = c.authenticatedPostRequest(&response, urlPath, params)
 	if err != nil {
 		return
 	}
@@ -573,7 +698,7 @@ type V2WebsocketsTokenResponse struct {
 // V2WebsocketsToken generates an ephemeral token, which allows user to subscribe to private
 // websocket events. These events include ClientOrderIds (and potentially additional private data)
 func (c *HttpClient) V2WebsocketsToken() (response V2WebsocketsTokenResponse, err error) {
-	err = c.authenticatedPostRequest(&response, "/v2/websockets_token/")
+	err = c.authenticatedPostRequest(&response, "/v2/websockets_token/", nil)
 	if err != nil {
 		return
 	}

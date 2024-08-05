@@ -3,10 +3,11 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/shopspring/decimal"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/shopspring/decimal"
 )
 
 // Contains "public" endpoints whereby we are following the naming here: https://www.bitstamp.net/api/
@@ -364,11 +365,11 @@ type V2OhlcResponse struct {
 }
 
 // GET https://www.bitstamp.net/api/v2/ohlc/{currency_pair}/?step=60&limit=5
-// - start (Optional): Unix timestamp from when OHLC data will be started.
-// - end (Optional): Unix timestamp to when OHLC data will be shown.
-// 	If none from start or end timestamps are posted then endpoint returns OHLC data to current unixtime. If both start and end timestamps are posted, end timestamp will be used.
-// - step: Timeframe in seconds. Possible options are 60, 180, 300, 900, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 259200
-// - limit: Limit OHLC results (minimum: 1; maximum: 1000)
+//   - start (Optional): Unix timestamp from when OHLC data will be started.
+//   - end (Optional): Unix timestamp to when OHLC data will be shown.
+//     If none from start or end timestamps are posted then endpoint returns OHLC data to current unixtime. If both start and end timestamps are posted, end timestamp will be used.
+//   - step: Timeframe in seconds. Possible options are 60, 180, 300, 900, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 259200
+//   - limit: Limit OHLC results (minimum: 1; maximum: 1000)
 func (c *HttpClient) V2Ohlc(currencyPair string, step, limit int, start, end int64) (response V2OhlcResponse, err error) {
 	if err = validateCurrencyPair(currencyPair); err != nil {
 		return
@@ -428,5 +429,24 @@ type V2EurUsdResponse struct {
 // GET https://www.bitstamp.net/api/v2/eur_usd/
 func (c *HttpClient) V2EurUsd() (response V2EurUsdResponse, err error) {
 	err = c.getRequest(&response, "/v2/eur_usd/")
+	return
+}
+
+// Currencies
+
+type V2CurrenciesResponse struct {
+	Name            string `json:"name"`
+	Currency        string `json:"currency"`
+	Type            string `json:"type"`
+	Symbol          string `json:"symbol"`
+	Decimals        string `json:"decimal"`
+	Logo            string `json:"logo"`
+	AvailableSupply string `json:"available_supply"`
+	Deposit         string `json:"deposit"`
+	Withdrawal      string `json:"withdrawal"`
+}
+
+func (c *HttpClient) V2Currencies() (response []V2CurrenciesResponse, err error) {
+	err = c.getRequest(&response, "/v2/currencies/")
 	return
 }
