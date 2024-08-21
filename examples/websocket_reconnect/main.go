@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/Roky994/bitstamp-go/pkg/websocket"
+	"github.com/bitstonks/bitstamp-go/pkg/websocket"
 )
 
 // Following app is an example of handling reconnect request from Websocket server. Note, that

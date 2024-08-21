@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Roky994/bitstamp-go/pkg/http"
+	"github.com/bitstonks/bitstamp-go/pkg/http"
 )
 
 func main() {

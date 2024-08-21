@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/Roky994/bitstamp-go/pkg/websocket"
+	"github.com/bitstonks/bitstamp-go/pkg/websocket"
 )
 
 func main() {

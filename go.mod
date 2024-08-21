@@ -1,4 +1,4 @@
-module github.com/Roky994/bitstamp-go
+module github.com/bitstonks/bitstamp-go
 
 go 1.18
 
