@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -15,7 +15,7 @@ import (
 )
 
 // A helper function, custom URL merging logic adapted for the API.
-func urlMerge(baseUrl url.URL, urlPath string, queryParams ...[2]string) string {
+func urlMerge(baseUrl url.URL, urlPath string, queryParams *url.Values) string {
 	baseUrl.Path = path.Join(baseUrl.Path, urlPath)
 
 	// apparently, path.Join loses trailing slash in urlPath. we don't want that...
@@ -25,8 +25,12 @@ func urlMerge(baseUrl url.URL, urlPath string, queryParams ...[2]string) string 
 
 	// add query params
 	values := baseUrl.Query()
-	for _, param := range queryParams {
-		values.Set(param[0], param[1])
+	if queryParams != nil {
+		for a, param := range *queryParams {
+			for _, value := range param {
+				values.Add(a, value)
+			}
+		}
 	}
 	baseUrl.RawQuery = values.Encode()
 
@@ -66,23 +70,8 @@ func NewHttpClient(options ...HttpOption) *HttpClient {
 	return &HttpClient{config}
 }
 
-func (c *HttpClient) credentials() url.Values {
-	nonce := c.nonceGenerator()
-	message := nonce + c.username + c.apiKey
-
-	h := hmac.New(sha256.New, []byte(c.apiSecret))
-	h.Write([]byte(message))
-	signature := strings.ToUpper(hex.EncodeToString(h.Sum(nil)))
-
-	data := make(url.Values)
-	data.Set("key", c.apiKey)
-	data.Set("signature", signature)
-	data.Set("nonce", nonce)
-	return data
-}
-
-func (c *HttpClient) getRequest(responseObject interface{}, urlPath string, queryParams ...[2]string) (err error) {
-	url_ := urlMerge(c.domain, urlPath, queryParams...)
+func (c *HttpClient) getRequest(responseObject interface{}, urlPath string, queryParams *url.Values) (err error) {
+	url_ := urlMerge(c.domain, urlPath, queryParams)
 
 	resp, err := http.Get(url_)
 	if err != nil {
@@ -90,7 +79,7 @@ func (c *HttpClient) getRequest(responseObject interface{}, urlPath string, quer
 	}
 	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
@@ -108,28 +97,50 @@ func (c *HttpClient) getRequest(responseObject interface{}, urlPath string, quer
 	return
 }
 
-func (c *HttpClient) authenticatedPostRequest(responseObject interface{}, urlPath string, queryParams map[string]string) (err error) {
-	authVersion := "v2"
-	method := "POST"
-	xAuth := "BITSTAMP " + c.apiKey
-	apiSecret := []byte(c.apiSecret)
+func (c *HttpClient) authenticatedFormRequest(responseObject interface{}, method string, urlPath string, queryParams *url.Values, formQueryParams map[string]string) (err error) {
 	contentType := "application/x-www-form-urlencoded"
-	timestamp_ := c.timestampGenerator()
-	nonce := c.nonceGenerator()
-	url_ := urlMerge(c.domain, urlPath)
-
 	var payloadString string
-	if queryParams != nil {
+	if formQueryParams != nil {
 		urlParams := url.Values{}
-		for paramName, paramVal := range queryParams {
+		for paramName, paramVal := range formQueryParams {
 			urlParams.Add(paramName, paramVal)
 		}
 		payloadString = urlParams.Encode()
 	}
 
+	err = c.doSignedRequest(responseObject, method, urlPath, queryParams, contentType, payloadString)
+	return
+}
+
+func (c *HttpClient) authenticatedJsonRequest(responseObject interface{}, method string, urlPath string, urlParams *url.Values, requestObject interface{}) (err error) {
+	contentType := "application/json"
+	var payloadString string
+	var payloadBytes []byte
+	if requestObject != nil {
+		payloadBytes, err = json.Marshal(requestObject)
+		if payloadBytes != nil {
+			payloadString = string(payloadBytes)
+		}
+	}
+
+	err = c.doSignedRequest(responseObject, method, urlPath, urlParams, contentType, payloadString)
+	return
+}
+
+type PaginationWrapper struct {
+	Data interface{} `json:"data"`
+}
+
+func (c *HttpClient) doSignedRequest(responseObject interface{}, method string, urlPath string, urlParams *url.Values, contentType string, payloadString string) (err error) {
+	url_ := urlMerge(c.domain, urlPath, urlParams)
+	authVersion := "v2"
+	xAuth := "BITSTAMP " + c.apiKey
+	apiSecret := []byte(c.apiSecret)
+	timestamp_ := c.timestampGenerator()
+	nonce := c.nonceGenerator()
 	// message construction
 	msg := xAuth + method + strings.TrimPrefix(strings.TrimPrefix(url_, "https://"), "http://")
-	if queryParams == nil {
+	if payloadString == "" {
 		msg = msg + nonce + timestamp_ + authVersion // TODO: apparently, contentType must be omitted here?
 	} else {
 		msg = msg + contentType + nonce + timestamp_ + authVersion + payloadString
@@ -141,49 +152,49 @@ func (c *HttpClient) authenticatedPostRequest(responseObject interface{}, urlPat
 	// do the request
 	client := &http.Client{}
 	var req *http.Request
-	if queryParams == nil {
+	if payloadString == "" {
 		req, err = http.NewRequest(method, url_, nil)
 	} else {
 		req, err = http.NewRequest(method, url_, bytes.NewBuffer([]byte(payloadString)))
 	}
 	if err != nil {
-		return
+		return err
 	}
 	req.Header.Add("X-Auth", xAuth)
 	req.Header.Add("X-Auth-Signature", signature)
 	req.Header.Add("X-Auth-Nonce", nonce)
 	req.Header.Add("X-Auth-Timestamp", timestamp_)
 	req.Header.Add("X-Auth-Version", authVersion)
-	if queryParams != nil {
+	if payloadString != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return
+		return err
 	}
 	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return err
 	}
 
 	// handle response
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != 200 && resp.StatusCode != 201 && resp.StatusCode != 204 {
 		var errorMsg map[string]interface{}
 		err = json.Unmarshal(respBody, &errorMsg)
 		if err != nil {
-			return
+			return err
 		}
 
 		reasonVal, reasonPresent := errorMsg["reason"]
 		codeVal, codePresent := errorMsg["code"]
 		if reasonPresent && codePresent {
 			err = fmt.Errorf("%s %s (%d)", codeVal, reasonVal, resp.StatusCode)
-			return
+			return err
 		} else {
 			err = fmt.Errorf("%s (%d)", string(respBody), resp.StatusCode)
-			return
+			return err
 		}
 	} else {
 		// verify server signature
@@ -193,14 +204,22 @@ func (c *HttpClient) authenticatedPostRequest(responseObject interface{}, urlPat
 		serverSig := hex.EncodeToString(sig.Sum(nil))
 		if serverSig != resp.Header.Get("X-Server-Auth-Signature") {
 			err = fmt.Errorf("server signature mismatch: us (%s) them (%s)", serverSig, resp.Header.Get("X-Server-Auth-Signature"))
-			return
+			return err
 		}
+		if len(respBody) > 0 {
+			err = json.Unmarshal(respBody, responseObject)
+			if err != nil {
+				var wrapped PaginationWrapper
+				wrapped = PaginationWrapper{Data: responseObject}
+				err = json.Unmarshal(respBody, &wrapped)
+				responseObject = wrapped.Data
+				if err != nil {
+					return err
 
-		err = json.Unmarshal(respBody, responseObject)
-		if err != nil {
-			return
+				}
+			}
 		}
 	}
 
-	return
+	return nil
 }

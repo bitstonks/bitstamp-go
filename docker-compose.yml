@@ -1,0 +1,8 @@
+---
+services:
+  app:
+    image: golang:1.22.6-bookworm
+    volumes:
+      - "./:/sources"
+    working_dir: "/sources"
+    command: "tail -f /dev/null"

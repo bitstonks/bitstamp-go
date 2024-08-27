@@ -2,12 +2,75 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"net/url"
+	"strconv"
+	"time"
 
 	"github.com/shopspring/decimal"
 )
+
+// StringInt create a type alias for type int64
+type StringInt int64
+
+// UnmarshalJSON create a custom unmarshal for the StringInt
+// / this helps us check the type of our value before unmarshalling it
+func (st *StringInt) UnmarshalJSON(b []byte) error {
+	//convert the bytes into an interface
+	//this will help us check the type of our value
+	//if it is a string that can be converted into a int we convert it
+	///otherwise we return an error
+	var item interface{}
+	if err := json.Unmarshal(b, &item); err != nil {
+		return err
+	}
+	switch v := item.(type) {
+	case int:
+		*st = StringInt(v)
+	case float64:
+		*st = StringInt(int64(v))
+	case string:
+		///here convert the string into
+		///an integer
+		i, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			///the string might not be of integer type
+			///so return an error
+			return err
+
+		}
+		*st = StringInt(i)
+
+	}
+	return nil
+}
+
+type StringDatetimeFromMicroseconds time.Time
+
+func (st *StringDatetimeFromMicroseconds) UnmarshalJSON(b []byte) error {
+	var item interface{}
+	if err := json.Unmarshal(b, &item); err != nil {
+		return err
+	}
+	switch v := item.(type) {
+	case int:
+		*st = StringDatetimeFromMicroseconds(time.Unix(0, int64(v)*int64(time.Microsecond)))
+	case float64:
+		*st = StringDatetimeFromMicroseconds(time.Unix(0, int64(v)*int64(time.Microsecond)))
+	case string:
+		millis, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			///the string might not be of integer type
+			///so return an error
+			return err
+
+		}
+		*st = StringDatetimeFromMicroseconds(time.Unix(0, millis*int64(time.Microsecond)))
+
+	}
+	return nil
+}
 
 // Contains "private" endpoints whereby we are following the naming here: https://www.bitstamp.net/api/
 
@@ -246,9 +309,9 @@ type V2BalanceResponse struct {
 func (c *HttpClient) V2Balance(currencyPairOrAll string) (response V2BalanceResponse, err error) {
 	// TODO: validate currency pair
 	if currencyPairOrAll == "all" {
-		err = c.authenticatedPostRequest(&response, "/v2/balance/", nil)
+		err = c.authenticatedFormRequest(&response, "POST", "/v2/balance/", nil, nil)
 	} else {
-		err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/balance/%s/", currencyPairOrAll), nil)
+		err = c.authenticatedFormRequest(&response, "POST", fmt.Sprintf("/v2/balance/%s/", currencyPairOrAll), nil, nil)
 	}
 
 	return
@@ -265,7 +328,7 @@ type V2AccountBalancesResponse struct {
 
 // POST https://www.bitstamp.net/api/v2/account_balances/
 func (c *HttpClient) V2AccountBalances() (response []V2AccountBalancesResponse, err error) {
-	err = c.authenticatedPostRequest(&response, "/v2/account_balances/", nil)
+	err = c.authenticatedFormRequest(&response, "POST", "/v2/account_balances/", nil, nil)
 	return
 }
 
@@ -319,9 +382,9 @@ type V2UserTransactionsResponse struct {
 // TODO: add arguments!
 func (c *HttpClient) V2UserTransactions(currencyPairOrAll string) (response []V2UserTransactionsResponse, err error) {
 	if currencyPairOrAll == "all" {
-		err = c.authenticatedPostRequest(&response, "/v2/user_transactions/", map[string]string{"limit": "1000"})
+		err = c.authenticatedFormRequest(&response, "POST", "/v2/user_transactions/", nil, map[string]string{"limit": "1000"})
 	} else {
-		err = c.authenticatedPostRequest(&response, fmt.Sprintf("/v2/user_transactions/%s/", currencyPairOrAll), map[string]string{"limit": "1000"})
+		err = c.authenticatedFormRequest(&response, "POST", fmt.Sprintf("/v2/user_transactions/%s/", currencyPairOrAll), nil, map[string]string{"limit": "1000"})
 	}
 
 	return
@@ -362,7 +425,7 @@ func (c *HttpClient) V2CryptoTransactions(includeIous bool) (response V2CryptoTr
 		params["include_ious"] = ""
 	}
 
-	err = c.authenticatedPostRequest(&response, "/v2/crypto-transactions/", params)
+	err = c.authenticatedFormRequest(&response, "POST", "/v2/crypto-transactions/", nil, params)
 	return
 }
 
@@ -375,7 +438,7 @@ type V2CryptoAddressResponse struct {
 
 func (c *HttpClient) V2CryptoAddress(currency string) (response V2CryptoAddressResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/%s_address/", currency)
-	err = c.authenticatedPostRequest(&response, urlPath, nil)
+	err = c.authenticatedFormRequest(&response, "POST", urlPath, nil, nil)
 	return
 }
 
@@ -401,7 +464,7 @@ func (c *HttpClient) V2WithdrawalRequests(withdrawalId int64, timeDelta string) 
 		params["timedelta"] = ""
 	}
 
-	err = c.authenticatedPostRequest(&response, "/v2/withdrawal-requests/", params)
+	err = c.authenticatedFormRequest(&response, "POST", "/v2/withdrawal-requests/", nil, params)
 	return
 }
 
@@ -414,7 +477,7 @@ type V2WithdrawalFeesResponse struct {
 }
 
 func (c *HttpClient) V2WithdrawalFees() (response []V2WithdrawalFeesResponse, err error) {
-	err = c.authenticatedPostRequest(&response, "/v2/fees/withdrawal/", nil)
+	err = c.authenticatedFormRequest(&response, "POST", "/v2/fees/withdrawal/", nil, nil)
 	return
 }
 
@@ -432,27 +495,30 @@ type V2TradingFeesResponse struct {
 }
 
 func (c *HttpClient) V2TradingFees() (response []V2TradingFeesResponse, err error) {
-	err = c.authenticatedPostRequest(&response, "/v2/fees/trading/", nil)
+	err = c.authenticatedFormRequest(&response, "POST", "/v2/fees/trading/", nil, nil)
 	return
 }
 
 // Open orders
 type V2OpenOrdersResponse struct {
-	Id           string          `json:"id"`
-	Datetime     string          `json:"datetime"`
-	Type         string          `json:"type"`
-	Price        decimal.Decimal `json:"price"`
-	Amount       decimal.Decimal `json:"amount"`
-	CurrencyPair string          `json:"currency_pair"`
-	Status       string          `json:"status"`
-	Reason       interface{}     `json:"reason"`
+	Id            string           `json:"id"`
+	Datetime      string           `json:"datetime"`
+	Type          string           `json:"type"`
+	Price         decimal.Decimal  `json:"price"`
+	Amount        decimal.Decimal  `json:"amount"`
+	CurrencyPair  string           `json:"currency_pair"`
+	ClientOrderId string           `json:"client_order_id"`
+	Status        string           `json:"status"`
+	Reason        interface{}      `json:"reason"`
+	Leverage      *decimal.Decimal `json:"leverage"`
+	MarginMode    *MarginMode      `json:"margin_mode"`
 }
 
 // POST https://www.bitstamp.net/api/v2/open_orders/all/
 // POST https://www.bitstamp.net/api/v2/open_orders/{currency_pair}
 func (c *HttpClient) V2OpenOrders(currencyPairOrAll string) (response []V2OpenOrdersResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/open_orders/%s/", currencyPairOrAll)
-	err = c.authenticatedPostRequest(&response, urlPath, nil)
+	err = c.authenticatedFormRequest(&response, "POST", urlPath, nil, nil)
 
 	return
 }
@@ -493,7 +559,7 @@ func (c *HttpClient) V2OrderStatus(orderId int64, clOrdId string, omitTx bool) (
 		params["omit_transactions"] = "true"
 	}
 
-	err = c.authenticatedPostRequest(&response, "/v2/order_status/", params)
+	err = c.authenticatedFormRequest(&response, "POST", "/v2/order_status/", nil, params)
 	if err != nil {
 		return
 	}
@@ -518,7 +584,7 @@ type V2CancelOrderResponse struct {
 }
 
 func (c *HttpClient) V2CancelOrder(orderId int64) (response V2CancelOrderResponse, err error) {
-	err = c.authenticatedPostRequest(&response, "/v2/cancel_order/", map[string]string{"id": fmt.Sprintf("%d", orderId)})
+	err = c.authenticatedFormRequest(&response, "POST", "/v2/cancel_order/", nil, map[string]string{"id": fmt.Sprintf("%d", orderId)})
 	return
 }
 
@@ -529,16 +595,25 @@ func (c *HttpClient) V2CancelOrder(orderId int64) (response V2CancelOrderRespons
 // {"status": "error", "reason": {"__all__": ["Price is more than 20% below market price."]}}
 // {"status": "error", "reason": {"__all__": ["You need 158338.86 USD to open that order. You have only 99991.52 USD available. Check your account balance for details."]}}
 type V2LimitOrderResponse struct {
-	Id       string          `json:"id"`
-	Datetime string          `json:"datetime"`
-	Type     string          `json:"type"`
-	Price    decimal.Decimal `json:"price"`
-	Amount   decimal.Decimal `json:"amount"`
-	Status   string          `json:"status"`
-	Reason   interface{}     `json:"reason"`
+	Id         string           `json:"id"`
+	Datetime   string           `json:"datetime"`
+	Type       string           `json:"type"`
+	Price      decimal.Decimal  `json:"price"`
+	Amount     decimal.Decimal  `json:"amount"`
+	Status     string           `json:"status"`
+	Reason     interface{}      `json:"reason"`
+	Leverage   *decimal.Decimal `json:"leverage"`
+	MarginMode *MarginMode      `json:"margin_mode"`
 }
 
-func (c *HttpClient) v2LimitOrder(side, currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
+type MarginMode string
+
+const (
+	Cross    MarginMode = "CROSS"
+	Isolated MarginMode = "ISOLATED"
+)
+
+func (c *HttpClient) v2LimitOrder(side, currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string, marginMode *MarginMode, leverage *decimal.Decimal, reduceOnly bool) (response V2LimitOrderResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/%s/%s/", side, currencyPair)
 
 	if c.autoRounding {
@@ -561,9 +636,18 @@ func (c *HttpClient) v2LimitOrder(side, currencyPair string, price, amount, limi
 	if clOrdId != "" {
 		params["client_order_id"] = clOrdId
 	}
+	if marginMode != nil {
+		params["margin_mode"] = string(*marginMode)
+	}
+	if leverage != nil {
+		params["leverage"] = leverage.String()
+	}
+	if reduceOnly {
+		params["reduce_only"] = "True"
+	}
 	// TODO: limitPrice !
 
-	err = c.authenticatedPostRequest(&response, urlPath, params)
+	err = c.authenticatedFormRequest(&response, "POST", urlPath, nil, params)
 	if err != nil {
 		return
 	}
@@ -575,47 +659,52 @@ func (c *HttpClient) v2LimitOrder(side, currencyPair string, price, amount, limi
 	return
 }
 
-func (c *HttpClient) V2BuyLimitOrder(currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
-	return c.v2LimitOrder("buy", currencyPair, price, amount, limitPrice, dailyOrder, iocOrder, clOrdId)
+func (c *HttpClient) V2BuyLimitOrder(currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string, marginMode *MarginMode, leverage *decimal.Decimal, reduceOnly bool) (response V2LimitOrderResponse, err error) {
+	return c.v2LimitOrder("buy", currencyPair, price, amount, limitPrice, dailyOrder, iocOrder, clOrdId, marginMode, leverage, reduceOnly)
 }
 
-func (c *HttpClient) V2SellLimitOrder(currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string) (response V2LimitOrderResponse, err error) {
-	return c.v2LimitOrder("sell", currencyPair, price, amount, limitPrice, dailyOrder, iocOrder, clOrdId)
+func (c *HttpClient) V2SellLimitOrder(currencyPair string, price, amount, limitPrice decimal.Decimal, dailyOrder, iocOrder bool, clOrdId string, marginMode *MarginMode, leverage *decimal.Decimal, reduceOnly bool) (response V2LimitOrderResponse, err error) {
+	return c.v2LimitOrder("sell", currencyPair, price, amount, limitPrice, dailyOrder, iocOrder, clOrdId, marginMode, leverage, reduceOnly)
 }
 
 type V2MarketOrderResponse struct {
-	Id       string          `json:"id"`
-	Datetime string          `json:"datetime"`
-	Type     string          `json:"type"`
-	Price    decimal.Decimal `json:"price"`
-	Amount   decimal.Decimal `json:"amount"`
-	Error    string          `json:"error"`
-	Status   string          `json:"status"`
-	Reason   interface{}     `json:"reason"`
+	Id              string          `json:"id"`
+	Subtype         string          `json:"subtype"`
+	Market          string          `json:"market"`
+	Datetime        string          `json:"datetime"`
+	Type            string          `json:"type"`
+	Price           decimal.Decimal `json:"price"`
+	Amount          decimal.Decimal `json:"amount"`
+	ClientOrderId   string          `json:"client_order_id"`
+	MarginMode      MarginMode      `json:"margin_mode"`
+	Leverage        decimal.Decimal `json:"leverage"`
+	StopPrice       decimal.Decimal `json:"stop_price"`
+	Trigger         string          `json:"trigger"`
+	ActivationPrice decimal.Decimal `json:"activation_price"`
+	TrailingDelta   decimal.Decimal `json:"trailing_delta"`
+	Reason          string          `json:"reason"`
+	Status          string          `json:"status"`
 }
 
-func (c *HttpClient) v2MarketOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
+func (c *HttpClient) v2MarketOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string, marginMode *MarginMode, leverage *decimal.Decimal, reduceOnly bool) (response V2MarketOrderResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/%s/market/%s/", side, currencyPair)
-	url_ := urlMerge(c.domain, urlPath)
 
-	data := c.credentials()
-	data.Set("amount", amount.String())
+	data := make(map[string]string)
+	data["amount"] = amount.String()
 	if clOrdId != "" {
-		data.Set("client_order_id", clOrdId)
+		data["client_order_id"] = clOrdId
+	}
+	if marginMode != nil {
+		data["margin_mode"] = string(*marginMode)
+	}
+	if leverage != nil {
+		data["leverage"] = leverage.String()
+	}
+	if reduceOnly {
+		data["reduce_only"] = "True"
 	}
 
-	resp, err := http.PostForm(url_, data)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(respBody, &response)
+	err = c.authenticatedFormRequest(response, "POST", urlPath, nil, data)
 	if err != nil {
 		return
 	}
@@ -628,65 +717,496 @@ func (c *HttpClient) v2MarketOrder(side, currencyPair string, amount decimal.Dec
 	return
 }
 
-func (c *HttpClient) V2BuyMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
-	return c.v2MarketOrder("buy", currencyPair, amount, clOrdId)
+func (c *HttpClient) V2BuyMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string, marginMode *MarginMode, leverage *decimal.Decimal, reduceOnly bool) (response V2MarketOrderResponse, err error) {
+	return c.v2MarketOrder("buy", currencyPair, amount, clOrdId, marginMode, leverage, reduceOnly)
 }
 
-func (c *HttpClient) V2SellMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2MarketOrderResponse, err error) {
-	return c.v2MarketOrder("sell", currencyPair, amount, clOrdId)
+func (c *HttpClient) V2SellMarketOrder(currencyPair string, amount decimal.Decimal, clOrdId string, marginMode *MarginMode, leverage *decimal.Decimal, reduceOnly bool) (response V2MarketOrderResponse, err error) {
+	return c.v2MarketOrder("sell", currencyPair, amount, clOrdId, marginMode, leverage, reduceOnly)
 }
 
 type V2InstantOrderResponse struct {
-	Id       string          `json:"id"`
-	Datetime string          `json:"datetime"`
-	Type     string          `json:"type"`
-	Price    decimal.Decimal `json:"price"`
-	Amount   decimal.Decimal `json:"amount"`
-	Error    string          `json:"error"`
-	Status   string          `json:"status"`
-	Reason   interface{}     `json:"reason"`
+	Id         string           `json:"id"`
+	Datetime   string           `json:"datetime"`
+	Type       string           `json:"type"`
+	Price      decimal.Decimal  `json:"price"`
+	Amount     decimal.Decimal  `json:"amount"`
+	Error      string           `json:"error"`
+	Status     string           `json:"status"`
+	Reason     interface{}      `json:"reason"`
+	Leverage   *decimal.Decimal `json:"leverage"`
+	MarginMode *MarginMode      `json:"margin_mode"`
 }
 
-func (c *HttpClient) v2InstantOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
+func (c *HttpClient) v2InstantOrder(side, currencyPair string, amount decimal.Decimal, clOrdId string, marginMode *MarginMode, leverage *decimal.Decimal, reduceOnly bool) (response V2InstantOrderResponse, err error) {
 	urlPath := fmt.Sprintf("/v2/%s/instant/%s/", side, currencyPair)
-	url_ := urlMerge(c.domain, urlPath)
 
-	data := c.credentials()
-	data.Set("amount", amount.String())
+	var data map[string]string
+	data["amount"] = amount.String()
 	if clOrdId != "" {
-		data.Set("client_order_id", clOrdId)
+		data["client_order_id"] = clOrdId
+	}
+	if marginMode != nil {
+		data["margin_mode"] = string(*marginMode)
+	}
+	if leverage != nil {
+		data["leverage"] = leverage.String()
+	}
+	if reduceOnly {
+		data["reduce_only"] = "True"
 	}
 
-	resp, err := http.PostForm(url_, data)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(respBody, &response)
+	err = c.authenticatedFormRequest(response, "POST", urlPath, nil, data)
 	if err != nil {
 		return
 	}
 
 	if response.Status == "error" {
-		err = fmt.Errorf("error placing instant %s (for %s): %v", side, amount, response.Reason)
+		err = fmt.Errorf("error placing market %s (for %s): %v", side, amount, response.Reason)
 		return
 	}
 
 	return
 }
 
-func (c *HttpClient) V2BuyInstantOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
-	return c.v2InstantOrder("buy", currencyPair, amount, clOrdId)
+func (c *HttpClient) V2BuyInstantOrder(currencyPair string, amount decimal.Decimal, clOrdId string, marginMode *MarginMode, leverage *decimal.Decimal, reduceOnly bool) (response V2InstantOrderResponse, err error) {
+	return c.v2InstantOrder("buy", currencyPair, amount, clOrdId, marginMode, leverage, reduceOnly)
 }
 
-func (c *HttpClient) V2SellInstantOrder(currencyPair string, amount decimal.Decimal, clOrdId string) (response V2InstantOrderResponse, err error) {
-	return c.v2InstantOrder("sell", currencyPair, amount, clOrdId)
+func (c *HttpClient) V2SellInstantOrder(currencyPair string, amount decimal.Decimal, clOrdId string, marginMode *MarginMode, leverage *decimal.Decimal, reduceOnly bool) (response V2InstantOrderResponse, err error) {
+	return c.v2InstantOrder("sell", currencyPair, amount, clOrdId, marginMode, leverage, reduceOnly)
+}
+
+type MarketSide string
+
+const (
+	LONG  MarketSide = "LONG"
+	SHORT MarketSide = "SHORT"
+)
+
+type V2DerivativesOpenPosition struct {
+	Id                        string          `json:"id"`
+	Market                    string          `json:"market"`
+	MarketType                MarketType      `json:"market_type"`
+	MarginMode                MarginMode      `json:"margin_mode"`
+	SettlementCurrency        string          `json:"settlement_currency"`
+	EntryPrice                decimal.Decimal `json:"entry_price"`
+	PnlPercentage             decimal.Decimal `json:"pnl_percentage"`
+	PnlRealized               decimal.Decimal `json:"pnl_realized"`
+	PnlSettledSinceInception  decimal.Decimal `json:"pnl_settled_since_inception"`
+	Leverage                  decimal.Decimal `json:"leverage"`
+	Pnl                       decimal.Decimal `json:"pnl"`
+	Size                      decimal.Decimal `json:"size"`
+	PnlUnrealized             decimal.Decimal `json:"pnl_unrealized"`
+	ImpliedLeverage           decimal.Decimal `json:"implied_leverage"`
+	InitialMargin             decimal.Decimal `json:"initial_margin"`
+	InitialMarginRatio        decimal.Decimal `json:"initial_margin_ratio"`
+	CurrentMargin             decimal.Decimal `json:"current_margin"`
+	CollateralReserved        decimal.Decimal `json:"collateral_reserved"`
+	MaintenanceMargin         decimal.Decimal `json:"maintenance_margin"`
+	MaintenanceMarginRatio    decimal.Decimal `json:"maintenance_margin_ratio"`
+	EstimatedLiquidationPrice decimal.Decimal `json:"estimated_liquidation_price"`
+	EstimatedClosingFeeAmount decimal.Decimal `json:"estimated_closing_fee_amount"`
+	MarkPrice                 decimal.Decimal `json:"mark_price"`
+	CurrentValue              decimal.Decimal `json:"current_value"`
+	EntryValue                decimal.Decimal `json:"entry_value"`
+	StrikePrice               decimal.Decimal `json:"strike_price"`
+	Side                      MarketSide      `json:"side"`
+}
+
+func (c *HttpClient) V2DerivativesOpenPositions(marketSymbol *string) (response []V2DerivativesOpenPosition, err error) {
+	urlPath := "/v2/open_positions/"
+	if marketSymbol != nil {
+		urlPath = fmt.Sprintf("%s%s/", urlPath, *marketSymbol)
+	}
+
+	err = c.authenticatedFormRequest(&response, "GET", urlPath, nil, nil)
+	if err != nil {
+		return
+	}
+
+	return response, nil
+}
+
+type V2DerivativesOpenPositionRequest struct {
+	PositionId string `json:"position_id"`
+}
+
+type MarketType string
+
+const (
+	Spot      MarketType = "SPOT"
+	Perpetual MarketType = "PERPETUAL"
+)
+
+type PositionStatus string
+
+const (
+	Open              PositionStatus = "OPEN"
+	WaitingSettlement PositionStatus = "WAITING_SETTLEMENT"
+	Settled           PositionStatus = "SETTLED"
+	Liquidating       PositionStatus = "LIQUIDATING"
+)
+
+type V2DerivativesOpenPositionResponse struct {
+	Id               string                         `json:"id"`
+	Market           string                         `json:"market"`
+	MarketType       MarketType                     `json:"market_type"`
+	MarginMode       MarginMode                     `json:"margin_mode"`
+	PnlCurrency      string                         `json:"pnl_currency"`
+	EntryPrice       decimal.Decimal                `json:"entry_price"`
+	PnlPercentage    decimal.Decimal                `json:"pnl_percentage"`
+	PnlRealized      decimal.Decimal                `json:"pnl_realized"`
+	PnlSettled       decimal.Decimal                `json:"pnl_settled"`
+	Leverage         decimal.Decimal                `json:"leverage"`
+	Pnl              decimal.Decimal                `json:"pnl"`
+	AmountDelta      decimal.Decimal                `json:"amount_delta"`
+	TimeOpened       StringDatetimeFromMicroseconds `json:"time_opened"`
+	TimeClosed       StringDatetimeFromMicroseconds `json:"time_closed"`
+	Status           PositionStatus                 `json:"status"`
+	ExitPrice        decimal.Decimal                `json:"exit_price"`
+	SettlementPrice  decimal.Decimal                `json:"settlement_price"`
+	ClosingFeeAmount decimal.Decimal                `json:"closing_fee_amount"`
+}
+
+func (c *HttpClient) V2DerivativesClosePosition(positionId string) (response V2DerivativesOpenPositionResponse, err error) {
+	urlPath := "/v2/close_position/"
+	if positionId == "" {
+		err = errors.New("positionId is required")
+		return
+	}
+	requestPayload := V2DerivativesOpenPositionRequest{
+		PositionId: positionId,
+	}
+
+	err = c.authenticatedJsonRequest(&response, "POST", urlPath, nil, requestPayload)
+	if err != nil {
+		return
+	}
+
+	return response, nil
+}
+
+type ClosePositionOrderType string
+
+const (
+	Market ClosePositionOrderType = "MARKET"
+)
+
+type V2DerivativesOpenPositionsRequest struct {
+	MarginMode *MarginMode            `json:"margin_mode,omitempty"`
+	Market     *string                `json:"market,omitempty"`
+	OrderType  ClosePositionOrderType `json:"order_type"`
+}
+type V2DerivativesOpenPositionsResponse struct {
+	Closed []struct {
+		Id               string                         `json:"id"`
+		Market           string                         `json:"market"`
+		MarketType       MarketType                     `json:"market_type"`
+		MarginMode       MarginMode                     `json:"margin_mode"`
+		PnlCurrency      decimal.Decimal                `json:"pnl_currency"`
+		EntryPrice       decimal.Decimal                `json:"entry_price"`
+		PnlPercentage    decimal.Decimal                `json:"pnl_percentage"`
+		PnlRealized      decimal.Decimal                `json:"pnl_realized"`
+		PnlSettled       decimal.Decimal                `json:"pnl_settled"`
+		Leverage         decimal.Decimal                `json:"leverage"`
+		Pnl              decimal.Decimal                `json:"pnl"`
+		AmountDelta      decimal.Decimal                `json:"amount_delta"`
+		TimeOpened       StringDatetimeFromMicroseconds `json:"time_opened"`
+		TimeClosed       StringDatetimeFromMicroseconds `json:"time_closed"`
+		Status           PositionStatus                 `json:"status"`
+		ExitPrice        decimal.Decimal                `json:"exit_price"`
+		SettlementPrice  decimal.Decimal                `json:"settlement_price"`
+		ClosingFeeAmount decimal.Decimal                `json:"closing_fee_amount"`
+	} `json:"closed"`
+	Failed []struct {
+		Id               string                         `json:"id"`
+		Market           string                         `json:"market"`
+		MarketType       MarketType                     `json:"market_type"`
+		MarginMode       MarginMode                     `json:"margin_mode"`
+		PnlCurrency      decimal.Decimal                `json:"pnl_currency"`
+		EntryPrice       decimal.Decimal                `json:"entry_price"`
+		PnlPercentage    decimal.Decimal                `json:"pnl_percentage"`
+		PnlRealized      decimal.Decimal                `json:"pnl_realized"`
+		PnlSettled       decimal.Decimal                `json:"pnl_settled"`
+		Leverage         decimal.Decimal                `json:"leverage"`
+		Pnl              decimal.Decimal                `json:"pnl"`
+		AmountDelta      decimal.Decimal                `json:"amount_delta"`
+		TimeOpened       StringDatetimeFromMicroseconds `json:"time_opened"`
+		TimeClosed       StringDatetimeFromMicroseconds `json:"time_closed"`
+		Status           PositionStatus                 `json:"status"`
+		ExitPrice        decimal.Decimal                `json:"exit_price"`
+		SettlementPrice  decimal.Decimal                `json:"settlement_price"`
+		ClosingFeeAmount decimal.Decimal                `json:"closing_fee_amount"`
+	} `json:"failed"`
+}
+
+func (c *HttpClient) V2DerivativesClosePositions(orderType ClosePositionOrderType, marginMode *MarginMode, market *string) (response V2DerivativesOpenPositionsResponse, err error) {
+	urlPath := "/v2/close_positions/"
+	requestPayload := V2DerivativesOpenPositionsRequest{
+		OrderType:  orderType,
+		MarginMode: marginMode,
+		Market:     market,
+	}
+
+	err = c.authenticatedJsonRequest(&response, "POST", urlPath, nil, requestPayload)
+	if err != nil {
+		return
+	}
+
+	return response, nil
+}
+
+type V2DerivativesMarginInfoResponse struct {
+	AccountMargin          decimal.Decimal `json:"account_margin"`
+	AccountMarginAvailable decimal.Decimal `json:"account_margin_available"`
+	AccountMarginReserved  decimal.Decimal `json:"account_margin_reserved"`
+	Assets                 []struct {
+		Asset           string          `json:"asset"`
+		Available       decimal.Decimal `json:"available"`
+		MarginAvailable decimal.Decimal `json:"margin_available"`
+		Reserved        decimal.Decimal `json:"reserved"`
+		TotalAmount     decimal.Decimal `json:"total_amount"`
+	} `json:"assets"`
+	ImpliedLeverage        decimal.Decimal `json:"implied_leverage"`
+	InitialMarginRatio     decimal.Decimal `json:"initial_margin_ratio"`
+	MaintenanceMarginRatio decimal.Decimal `json:"maintenance_margin_ratio"`
+}
+
+func (c *HttpClient) V2DerivativesMarginInfo() (response V2DerivativesMarginInfoResponse, err error) {
+	urlPath := "/v2/margin_info/"
+
+	err = c.authenticatedJsonRequest(&response, "GET", urlPath, nil, nil)
+	if err != nil {
+		return
+	}
+
+	return response, nil
+}
+
+type Sort string
+
+const (
+	Descending Sort = "desc"
+	Ascending  Sort = "asc"
+)
+
+type V2DerivativesPositionsHistoryListResponse struct {
+	Id              string                         `json:"id"`
+	Market          string                         `json:"market"`
+	MarketType      MarketType                     `json:"market_type"`
+	MarginMode      MarginMode                     `json:"margin_mode"`
+	PnlCurrency     string                         `json:"pnl_currency"`
+	EntryPrice      decimal.Decimal                `json:"entry_price"`
+	PnlPercentage   decimal.Decimal                `json:"pnl_percentage"`
+	PnlRealized     decimal.Decimal                `json:"pnl_realized"`
+	PnlSettled      decimal.Decimal                `json:"pnl_settled"`
+	Leverage        decimal.Decimal                `json:"leverage"`
+	Pnl             decimal.Decimal                `json:"pnl"`
+	AmountDelta     decimal.Decimal                `json:"amount_delta"`
+	TimeOpened      StringDatetimeFromMicroseconds `json:"time_opened"`
+	TimeClosed      StringDatetimeFromMicroseconds `json:"time_closed"`
+	Status          PositionStatus                 `json:"status"`
+	ExitPrice       decimal.Decimal                `json:"exit_price"`
+	SettlementPrice decimal.Decimal                `json:"settlement_price"`
+}
+
+func (c *HttpClient) V2DerivativesPositionsHistoryList(marketSymbol *string, sort *Sort, page *int64, perPage *int64) (response []V2DerivativesPositionsHistoryListResponse, err error) {
+	if sort == nil {
+		sortValue := Descending
+		sort = &sortValue
+	}
+	if page == nil {
+		pageValue := int64(1)
+		page = &pageValue
+	}
+	urlPath := "/v2/position_history/"
+	if marketSymbol != nil {
+		urlPath += "/" + *marketSymbol + "/"
+	}
+	urlParams := make(url.Values)
+	urlParams.Set("sort", string(*sort))
+	urlParams.Set("page", strconv.FormatInt(*page, 10))
+	if perPage != nil {
+		urlParams.Set("per_page", strconv.FormatInt(*perPage, 10))
+	}
+
+	err = c.authenticatedJsonRequest(&response, "GET", urlPath, &urlParams, nil)
+	if err != nil {
+		return
+	}
+
+	return response, nil
+}
+
+type SettlementType string
+
+const (
+	Periodic SettlementType = "PERIODIC"
+	Closed   SettlementType = "CLOSED"
+)
+
+type V2DerivativesPositionsSettlementTransactionListResponse struct {
+	TransactionId              string                         `json:"transaction_id"`
+	PositionId                 string                         `json:"position_id"`
+	SettlementTime             StringDatetimeFromMicroseconds `json:"settlement_time"`
+	SettlementType             SettlementType                 `json:"settlement_type"`
+	SettlementPrice            decimal.Decimal                `json:"settlement_price"`
+	Market                     string                         `json:"market"`
+	MarketType                 MarketType                     `json:"market_type"`
+	PnlCurrency                string                         `json:"pnl_currency"`
+	PnlSettled                 decimal.Decimal                `json:"pnl_settled"`
+	PnlComponentPrice          decimal.Decimal                `json:"pnl_component_price"`
+	PnlComponentFees           decimal.Decimal                `json:"pnl_component_fees"`
+	PnlComponentFunding        decimal.Decimal                `json:"pnl_component_funding"`
+	PnlComponentSocializedLoss decimal.Decimal                `json:"pnl_component_socialized_loss"`
+	MarginMode                 MarginMode                     `json:"margin_mode"`
+	Size                       decimal.Decimal                `json:"size"`
+	StrikePrice                decimal.Decimal                `json:"strike_price"`
+}
+
+func (c *HttpClient) V2DerivativesPositionsSettlementTransactionList(marketTransactionId *string, offset *int64, limit *int64, sort *Sort, sinceTimestamp *int64, untilTimestamp *int64, sinceId *int64) (response []V2DerivativesPositionsSettlementTransactionListResponse, err error) {
+	if offset == nil {
+		offsetValue := int64(0)
+		offset = &offsetValue
+	}
+	if *offset > 200000 {
+		err = errors.New("invalid offset")
+		return
+	}
+	if limit == nil {
+		limitValue := int64(100)
+		limit = &limitValue
+	}
+	if *limit > 1000 {
+		err = errors.New("invalid limit")
+		return
+	}
+	if sort == nil {
+		sortValue := Descending
+		sort = &sortValue
+	}
+	urlPath := "/v2/position_settlement_transactions/"
+	if marketTransactionId != nil {
+		urlPath += "/" + *marketTransactionId + "/"
+	}
+	urlParams := make(url.Values)
+	urlParams.Set("offset", strconv.FormatInt(*offset, 10))
+	urlParams.Set("limit", strconv.FormatInt(*limit, 10))
+	urlParams.Set("sort", string(*sort))
+	if sinceTimestamp != nil {
+		urlParams.Set("since_timestamp", strconv.FormatInt(*sinceTimestamp, 10))
+	}
+	if untilTimestamp != nil {
+		urlParams.Set("until_timestamp", strconv.FormatInt(*untilTimestamp, 10))
+	}
+	if sinceId != nil {
+		urlParams.Set("since_id", strconv.FormatInt(*sinceId, 10))
+	}
+
+	err = c.authenticatedJsonRequest(&response, "GET", urlPath, &urlParams, nil)
+	if err != nil {
+		return
+	}
+
+	return response, nil
+}
+
+type V2DerivativesAdjustCollateralValueForPositionRequest struct {
+	PositionId string          `json:"position_id"`
+	NewAmount  decimal.Decimal `json:"new_amount"`
+}
+
+type V2DerivativesAdjustCollateralValueForPositionResponse struct {
+	Code    string `json:"code"`
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
+func (c *HttpClient) V2DerivativesAdjustCollateralValueForPosition(positionId string, newAmount decimal.Decimal) (response V2DerivativesAdjustCollateralValueForPositionResponse, err error) {
+	if positionId == "" {
+		err = errors.New("positionId is empty")
+		return
+	}
+	requestPayload := V2DerivativesAdjustCollateralValueForPositionRequest{
+		PositionId: positionId,
+		NewAmount:  newAmount,
+	}
+
+	urlPath := "/v2/adjust_position_collateral/"
+
+	err = c.authenticatedJsonRequest(&response, "POST", urlPath, nil, requestPayload)
+	if err != nil {
+		return
+	}
+
+	return response, nil
+}
+
+type V2DerivativesCollateralCurrenciesResponse struct {
+	Currency string          `json:"currency"`
+	Haircut  decimal.Decimal `json:"haircut"`
+}
+
+func (c *HttpClient) V2DerivativesCollateralCurrencies() (response []V2DerivativesCollateralCurrenciesResponse, err error) {
+	urlPath := "/v2/collateral_currencies/"
+
+	err = c.authenticatedJsonRequest(&response, "GET", urlPath, nil, nil)
+	if err != nil {
+		return
+	}
+
+	return response, nil
+}
+
+type V2DerivativesLeverageSettingsListResponse struct {
+	LeverageCurrent decimal.Decimal `json:"leverage_current"`
+	LeverageMax     decimal.Decimal `json:"leverage_max"`
+	MarginMode      MarginMode      `json:"margin_mode"`
+	Market          string          `json:"market"`
+}
+
+func (c *HttpClient) V2DerivativesLeverageSettingsList(marginMode MarginMode, market string) (response []V2DerivativesLeverageSettingsListResponse, err error) {
+	urlPath := "/v2/leverage_settings/"
+	urlParams := make(url.Values)
+	urlParams.Set("margin_mode", string(marginMode))
+	urlParams.Set("market", market)
+
+	err = c.authenticatedJsonRequest(&response, "GET", urlPath, &urlParams, nil)
+	if err != nil {
+		return
+	}
+
+	return response, nil
+}
+
+type V2DerivativesUpdateLeverageSettingWithOverrideRequest struct {
+	Leverage   decimal.Decimal `json:"leverage"`
+	MarginMode MarginMode      `json:"margin_mode"`
+	Market     string          `json:"market"`
+}
+
+type V2DerivativesUpdateLeverageSettingWithOverrideResponse struct {
+	LeverageCurrent decimal.Decimal `json:"leverage_current"`
+	LeverageMax     decimal.Decimal `json:"leverage_max"`
+	MarginMode      MarginMode      `json:"margin_mode"`
+	Market          string          `json:"market"`
+}
+
+func (c *HttpClient) V2DerivativesUpdateLeverageSettingWithOverride(leverage decimal.Decimal, marginMode MarginMode, market string) (response V2DerivativesUpdateLeverageSettingWithOverrideResponse, err error) {
+	urlPath := "/v2/leverage_settings/"
+	requestPayload := V2DerivativesUpdateLeverageSettingWithOverrideRequest{
+		Leverage:   leverage,
+		MarginMode: marginMode,
+		Market:     market,
+	}
+
+	err = c.authenticatedJsonRequest(&response, "POST", urlPath, nil, requestPayload)
+	if err != nil {
+		return
+	}
+
+	return response, nil
 }
 
 type V2WebsocketsTokenResponse struct {
@@ -698,7 +1218,7 @@ type V2WebsocketsTokenResponse struct {
 // V2WebsocketsToken generates an ephemeral token, which allows user to subscribe to private
 // websocket events. These events include ClientOrderIds (and potentially additional private data)
 func (c *HttpClient) V2WebsocketsToken() (response V2WebsocketsTokenResponse, err error) {
-	err = c.authenticatedPostRequest(&response, "/v2/websockets_token/", nil)
+	err = c.authenticatedFormRequest(&response, "POST", "/v2/websockets_token/", nil, nil)
 	if err != nil {
 		return
 	}

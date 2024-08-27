@@ -13,7 +13,6 @@ const bitstampHttpApiUrl = "https://www.bitstamp.net/api"
 
 type httpClientConfig struct {
 	domain             url.URL
-	username           string
 	apiKey             string
 	apiSecret          string
 	nonceGenerator     func() string
@@ -47,17 +46,10 @@ func UrlDomain(rawDomain string) HttpOption {
 	}
 }
 
-func Credentials(customerId string, apiKey string, apiSecret string) HttpOption {
+func Credentials(apiKey string, apiSecret string) HttpOption {
 	return func(config *httpClientConfig) {
-		config.username = customerId
 		config.apiKey = apiKey
 		config.apiSecret = apiSecret
-	}
-}
-
-func NonceGenerator(nonceGen func() string) HttpOption {
-	return func(config *httpClientConfig) {
-		config.nonceGenerator = nonceGen
 	}
 }
 
