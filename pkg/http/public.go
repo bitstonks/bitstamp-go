@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -70,13 +71,13 @@ func (t *TickerResponse) UnmarshalJSON(data []byte) error {
 
 // GET https://www.bitstamp.net/api/ticker/
 func (c *HttpClient) V1Ticker() (response TickerResponse, err error) {
-	err = c.getRequest(&response, "/ticker/")
+	err = c.getRequest(&response, "/ticker/", nil)
 	return
 }
 
 // GET https://www.bitstamp.net/api/ticker_hour/
 func (c *HttpClient) V1HourlyTicker() (response TickerResponse, err error) {
-	err = c.getRequest(&response, "/ticker_hour/")
+	err = c.getRequest(&response, "/ticker_hour/", nil)
 	return
 }
 
@@ -86,7 +87,7 @@ func (c *HttpClient) V2Ticker(currencyPair string) (response TickerResponse, err
 		return
 	}
 	urlPath := fmt.Sprintf("/v2/ticker/%s/", currencyPair)
-	err = c.getRequest(&response, urlPath)
+	err = c.getRequest(&response, urlPath, nil)
 	return
 }
 
@@ -96,7 +97,7 @@ func (c *HttpClient) V2HourlyTicker(currencyPair string) (response TickerRespons
 		return
 	}
 	urlPath := fmt.Sprintf("/v2/ticker_hour/%s/", currencyPair)
-	err = c.getRequest(&response, urlPath)
+	err = c.getRequest(&response, urlPath, nil)
 	return
 }
 
@@ -158,7 +159,9 @@ type V1OrderBookResponse struct {
 
 // GET https://www.bitstamp.net/api/order_book?group=1
 func (c *HttpClient) V1OrderBook(group int) (response V1OrderBookResponse, err error) {
-	err = c.getRequest(&response, "/order_book/", [2]string{"group", strconv.Itoa(group)})
+	urlParams := make(url.Values)
+	urlParams.Set("group", strconv.Itoa(group))
+	err = c.getRequest(&response, "/order_book/", &urlParams)
 	return
 }
 
@@ -179,7 +182,9 @@ func (c *HttpClient) V2OrderBook(currencyPair string, group int) (response V2Ord
 	switch group {
 	case 0, 1, 2:
 		urlPath := fmt.Sprintf("/v2/order_book/%s/", currencyPair)
-		err = c.getRequest(&response, urlPath, [2]string{"group", strconv.Itoa(group)})
+		urlParams := make(url.Values)
+		urlParams.Set("group", strconv.Itoa(group))
+		err = c.getRequest(&response, urlPath, &urlParams)
 	default:
 		err = fmt.Errorf("invalid group parameter value: %d", group)
 	}
@@ -274,9 +279,11 @@ func (c *HttpClient) V2Transactions(currencyPair string, timeParam string) (resp
 	// The time interval from which we want the transactions to be returned. Possible values are minute, hour (default) or day.
 	switch timeParam {
 	case "":
-		err = c.getRequest(&response, urlPath)
+		err = c.getRequest(&response, urlPath, nil)
 	case "minute", "hour", "day":
-		err = c.getRequest(&response, urlPath, [2]string{"time", timeParam})
+		urlParams := make(url.Values)
+		urlParams.Set("time", timeParam)
+		err = c.getRequest(&response, urlPath, &urlParams)
 	default:
 		err = fmt.Errorf("invalid value for time interval: %s", timeParam)
 	}
@@ -300,7 +307,7 @@ type V2TradingPairsInfoResponse struct {
 }
 
 func (c *HttpClient) V2TradingPairsInfo() (response []V2TradingPairsInfoResponse, err error) {
-	err = c.getRequest(&response, "/v2/trading-pairs-info/")
+	err = c.getRequest(&response, "/v2/trading-pairs-info/", nil)
 	return
 }
 
@@ -390,10 +397,10 @@ func (c *HttpClient) V2Ohlc(currencyPair string, step, limit int, start, end int
 		259200: {},
 	}
 
-	args := make([][2]string, 0)
+	args := make(url.Values)
 
 	if _, exists := validSteps[step]; exists {
-		args = append(args, [2]string{"step", strconv.Itoa(step)})
+		args.Set("step", strconv.Itoa(step))
 	} else {
 		err = fmt.Errorf("invalid value for step parameter: %d", step)
 		return
@@ -402,18 +409,18 @@ func (c *HttpClient) V2Ohlc(currencyPair string, step, limit int, start, end int
 	if limit < 1 || limit > 1000 {
 		err = fmt.Errorf("invalid value for limit parameter: %d", limit)
 	} else {
-		args = append(args, [2]string{"limit", strconv.Itoa(limit)})
+		args.Set("limit", strconv.Itoa(limit))
 	}
 
 	if end != 0 {
-		args = append(args, [2]string{"end", fmt.Sprintf("%d", end)})
+		args.Set("end", fmt.Sprintf("%d", end))
 	} else {
 		if start != 0 {
-			args = append(args, [2]string{"start", fmt.Sprintf("%d", start)})
+			args.Set("start", fmt.Sprintf("%d", start))
 		}
 	}
 	urlPath := fmt.Sprintf("/v2/ohlc/%s/", currencyPair)
-	err = c.getRequest(&response, urlPath, args...)
+	err = c.getRequest(&response, urlPath, &args)
 	return
 }
 
@@ -428,7 +435,7 @@ type V2EurUsdResponse struct {
 
 // GET https://www.bitstamp.net/api/v2/eur_usd/
 func (c *HttpClient) V2EurUsd() (response V2EurUsdResponse, err error) {
-	err = c.getRequest(&response, "/v2/eur_usd/")
+	err = c.getRequest(&response, "/v2/eur_usd/", nil)
 	return
 }
 
@@ -447,6 +454,6 @@ type V2CurrenciesResponse struct {
 }
 
 func (c *HttpClient) V2Currencies() (response []V2CurrenciesResponse, err error) {
-	err = c.getRequest(&response, "/v2/currencies/")
+	err = c.getRequest(&response, "/v2/currencies/", nil)
 	return
 }
