@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -181,6 +182,10 @@ func (c *HttpClient) doSignedRequest(responseObject interface{}, method string, 
 
 	// handle response
 	if resp.StatusCode != 200 && resp.StatusCode != 201 && resp.StatusCode != 204 {
+		if resp.StatusCode == 503 {
+			err = errors.New("service unavailable")
+			return
+		}
 		var errorMsg map[string]interface{}
 		err = json.Unmarshal(respBody, &errorMsg)
 		if err != nil {
