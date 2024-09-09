@@ -704,7 +704,7 @@ func (c *HttpClient) v2MarketOrder(side, currencyPair string, amount decimal.Dec
 		data["reduce_only"] = "True"
 	}
 
-	err = c.authenticatedFormRequest(response, "POST", urlPath, nil, data)
+	err = c.authenticatedFormRequest(&response, "POST", urlPath, nil, data)
 	if err != nil {
 		return
 	}
@@ -756,7 +756,7 @@ func (c *HttpClient) v2InstantOrder(side, currencyPair string, amount decimal.De
 		data["reduce_only"] = "True"
 	}
 
-	err = c.authenticatedFormRequest(response, "POST", urlPath, nil, data)
+	err = c.authenticatedFormRequest(&response, "POST", urlPath, nil, data)
 	if err != nil {
 		return
 	}
