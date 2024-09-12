@@ -1193,7 +1193,7 @@ type V2DerivativesUpdateLeverageSettingWithOverrideResponse struct {
 	Market          string          `json:"market"`
 }
 
-func (c *HttpClient) V2DerivativesUpdateLeverageSettingWithOverride(leverage decimal.Decimal, marginMode MarginMode, market string) (response []V2DerivativesUpdateLeverageSettingWithOverrideResponse, err error) {
+func (c *HttpClient) V2DerivativesUpdateLeverageSettingWithOverride(leverage decimal.Decimal, marginMode MarginMode, market string) (response V2DerivativesUpdateLeverageSettingWithOverrideResponse, err error) {
 	urlPath := "/v2/leverage_settings/"
 	requestPayload := V2DerivativesUpdateLeverageSettingWithOverrideRequest{
 		Leverage:   leverage,
