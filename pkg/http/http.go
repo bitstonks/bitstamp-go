@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -74,7 +75,7 @@ func NewHttpClient(options ...HttpOption) *HttpClient {
 func (c *HttpClient) getRequest(responseObject interface{}, urlPath string, queryParams *url.Values) (err error) {
 	url_ := urlMerge(c.domain, urlPath, queryParams)
 
-	resp, err := http.Get(url_)
+	resp, err := c.client.Get(url_)
 	if err != nil {
 		return
 	}
@@ -113,26 +114,29 @@ func (c *HttpClient) authenticatedFormRequest(responseObject interface{}, method
 	return
 }
 
-func (c *HttpClient) authenticatedJsonRequest(responseObject interface{}, method string, urlPath string, urlParams *url.Values, requestObject interface{}) (err error) {
+func (c *HttpClient) authenticatedJsonRequest(responseObject interface{}, method string, urlPath string, urlParams *url.Values, requestObject interface{}) error {
 	contentType := "application/json"
 	var payloadString string
 	var payloadBytes []byte
+	var err error
 	if requestObject != nil {
 		payloadBytes, err = json.Marshal(requestObject)
+		if err != nil {
+			return err
+		}
 		if payloadBytes != nil {
 			payloadString = string(payloadBytes)
 		}
 	}
 
-	err = c.doSignedRequest(responseObject, method, urlPath, urlParams, contentType, payloadString)
-	return
+	return c.doSignedRequest(responseObject, method, urlPath, urlParams, contentType, payloadString)
 }
 
 type PaginationWrapper struct {
 	Data interface{} `json:"data"`
 }
 
-func (c *HttpClient) doSignedRequest(responseObject interface{}, method string, urlPath string, urlParams *url.Values, contentType string, payloadString string) (err error) {
+func (c *HttpClient) doSignedRequest(responseObject interface{}, method string, urlPath string, urlParams *url.Values, contentType string, payloadString string) error {
 	url_ := urlMerge(c.domain, urlPath, urlParams)
 	authVersion := "v2"
 	xAuth := "BITSTAMP " + c.apiKey
@@ -151,12 +155,14 @@ func (c *HttpClient) doSignedRequest(responseObject interface{}, method string, 
 	signature := hex.EncodeToString(sig.Sum(nil))
 
 	// do the request
-	client := &http.Client{}
 	var req *http.Request
+	var err error
+	ctx, cancel := context.WithTimeout(context.Background(), c.requestTimeout)
+	defer cancel()
 	if payloadString == "" {
-		req, err = http.NewRequest(method, url_, nil)
+		req, err = http.NewRequestWithContext(ctx, method, url_, nil)
 	} else {
-		req, err = http.NewRequest(method, url_, bytes.NewBuffer([]byte(payloadString)))
+		req, err = http.NewRequestWithContext(ctx, method, url_, bytes.NewBuffer([]byte(payloadString)))
 	}
 	if err != nil {
 		return err
@@ -169,7 +175,7 @@ func (c *HttpClient) doSignedRequest(responseObject interface{}, method string, 
 	if payloadString != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
-	resp, err := client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -183,8 +189,7 @@ func (c *HttpClient) doSignedRequest(responseObject interface{}, method string, 
 	// handle response
 	if resp.StatusCode != 200 && resp.StatusCode != 201 && resp.StatusCode != 204 {
 		if resp.StatusCode == 503 {
-			err = errors.New("service unavailable")
-			return
+			return errors.New("service unavailable")
 		}
 		var errorMsg map[string]interface{}
 		err = json.Unmarshal(respBody, &errorMsg)
@@ -195,11 +200,9 @@ func (c *HttpClient) doSignedRequest(responseObject interface{}, method string, 
 		reasonVal, reasonPresent := errorMsg["reason"]
 		codeVal, codePresent := errorMsg["code"]
 		if reasonPresent && codePresent {
-			err = fmt.Errorf("%s %s (%d)", codeVal, reasonVal, resp.StatusCode)
-			return err
+			return fmt.Errorf("%s %s (%d)", codeVal, reasonVal, resp.StatusCode)
 		} else {
-			err = fmt.Errorf("%s (%d)", string(respBody), resp.StatusCode)
-			return err
+			return fmt.Errorf("%s (%d)", string(respBody), resp.StatusCode)
 		}
 	} else {
 		// verify server signature
@@ -208,20 +211,16 @@ func (c *HttpClient) doSignedRequest(responseObject interface{}, method string, 
 		sig.Write([]byte(checkMsg))
 		serverSig := hex.EncodeToString(sig.Sum(nil))
 		if serverSig != resp.Header.Get("X-Server-Auth-Signature") {
-			err = fmt.Errorf("server signature mismatch: us (%s) them (%s)", serverSig, resp.Header.Get("X-Server-Auth-Signature"))
-			return err
+			return fmt.Errorf("server signature mismatch: us (%s) them (%s)", serverSig, resp.Header.Get("X-Server-Auth-Signature"))
 		}
 		if len(respBody) > 0 {
 			err = json.Unmarshal(respBody, responseObject)
 			if err != nil {
-				var wrapped PaginationWrapper
-				wrapped = PaginationWrapper{Data: responseObject}
-				err = json.Unmarshal(respBody, &wrapped)
-				responseObject = wrapped.Data
-				if err != nil {
+				wrapped := PaginationWrapper{Data: responseObject}
+				if err := json.Unmarshal(respBody, &wrapped); err != nil {
 					return err
-
 				}
+				responseObject = wrapped.Data
 			}
 		}
 	}

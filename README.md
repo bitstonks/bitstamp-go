@@ -7,8 +7,8 @@ Client implementations for Bitstamp's HTTP (REST) and Websocket APIs in Go. Webs
 
 ## Requirements
 
-* Go 1.18+
-* Dependencies in `go.mod`
+- Go 1.22+
+- Dependencies in `go.mod`
 
 ## Usage examples
 
@@ -20,13 +20,13 @@ $ go run examples/http/main.go
 
 ## TODO
 
-* Configure GitHub Actions.
-* Update pairs config.
-* Finish implementing all the endpoints.
-* Remove/deprecate REST v1.
-* Godoc / documentation.
-* More tests.
-* E2E tests against Bitstamp's API.
-* Docker builds.
-* Authors file / information?
-* Shadow order book creation. (Is this an example? A separate project even?)
+- Configure GitHub Actions.
+- Update pairs config.
+- Finish implementing all the endpoints.
+- Remove/deprecate REST v1.
+- Godoc / documentation.
+- More tests.
+- E2E tests against Bitstamp's API.
+- Docker builds.
+- Authors file / information?
+- Shadow order book creation. (Is this an example? A separate project even?)

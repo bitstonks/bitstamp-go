@@ -3,14 +3,32 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
+	nethttp "net/http"
+	"time"
 
 	"github.com/bitstonks/bitstamp-go/pkg/http"
 	"github.com/shopspring/decimal"
 )
 
 func main() {
+	// Configure more sane timeouts for http client
+	t := nethttp.DefaultTransport.(*nethttp.Transport).Clone()
+	t.MaxIdleConns = 100
+	t.MaxConnsPerHost = 100
+	t.MaxIdleConnsPerHost = 100
+	t.DialContext = (&net.Dialer{Timeout: 2 * time.Second}).DialContext
+
+	httpClient := &nethttp.Client{
+		Timeout:   10 * time.Second,
+		Transport: t,
+	}
+
+	// construct the Bitstamp API client
 	api := http.NewHttpClient(
 		http.Credentials("invalid", "invalid"),
+		http.WithHttpClient(httpClient),    // optional, defaults to `http.DefaultClient{}`
+		http.RequestTimeout(5*time.Second), // optional, defaults to 10s
 	)
 	currencyPair := "btcusd-perp"
 	market := "BTC/USD-PERP"

@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 const bitstampHttpApiUrl = "https://www.bitstamp.net/api"
 
 type httpClientConfig struct {
+	client             *http.Client
 	domain             url.URL
 	apiKey             string
 	apiSecret          string
@@ -19,7 +21,8 @@ type httpClientConfig struct {
 	timestampGenerator func() string
 	// have client implicitly round input prices/amounts to correct number of decimal places.
 	// used solely for consumers' convenience and will probably be removed at some point.
-	autoRounding bool
+	autoRounding   bool
+	requestTimeout time.Duration
 }
 
 func defaultHttpClientConfig() *httpClientConfig {
@@ -28,9 +31,11 @@ func defaultHttpClientConfig() *httpClientConfig {
 		log.Panicf("error parsing domain %s: %v", bitstampHttpApiUrl, err)
 	}
 	return &httpClientConfig{
+		client:             http.DefaultClient,
 		domain:             *domain,
 		nonceGenerator:     defaultNonce,
 		timestampGenerator: timestamp,
+		requestTimeout:     10 * time.Second,
 	}
 }
 
@@ -56,6 +61,18 @@ func Credentials(apiKey string, apiSecret string) HttpOption {
 func AutoRoundingEnabled() HttpOption {
 	return func(config *httpClientConfig) {
 		config.autoRounding = true
+	}
+}
+
+func WithHttpClient(cl *http.Client) HttpOption {
+	return func(config *httpClientConfig) {
+		config.client = cl
+	}
+}
+
+func RequestTimeout(t time.Duration) HttpOption {
+	return func(config *httpClientConfig) {
+		config.requestTimeout = t
 	}
 }
 
